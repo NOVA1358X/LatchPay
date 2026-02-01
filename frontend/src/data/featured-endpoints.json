@@ -1,0 +1,68 @@
+[
+  {
+    "id": "gpt4-summarizer",
+    "name": "GPT-4 Text Summarizer",
+    "description": "Summarize any text using GPT-4 with customizable length and style options",
+    "category": "ai",
+    "pricePerCall": "0.05",
+    "seller": "0x0000000000000000000000000000000000000001",
+    "tags": ["ai", "nlp", "summarization"],
+    "featured": true,
+    "apiEndpoint": "/api/paid/summarize"
+  },
+  {
+    "id": "echo-service",
+    "name": "Echo Service",
+    "description": "Simple echo service for testing LatchPay integration",
+    "category": "compute",
+    "pricePerCall": "0.001",
+    "seller": "0x0000000000000000000000000000000000000002",
+    "tags": ["testing", "demo"],
+    "featured": true,
+    "apiEndpoint": "/api/paid/echo"
+  },
+  {
+    "id": "price-oracle",
+    "name": "Crypto Price Oracle",
+    "description": "Real-time cryptocurrency prices with historical data support",
+    "category": "oracle",
+    "pricePerCall": "0.01",
+    "seller": "0x0000000000000000000000000000000000000003",
+    "tags": ["oracle", "prices", "defi"],
+    "featured": true,
+    "apiEndpoint": "/api/paid/prices"
+  },
+  {
+    "id": "ipfs-pin",
+    "name": "IPFS Pin Service",
+    "description": "Pin files to IPFS with guaranteed availability and fast retrieval",
+    "category": "storage",
+    "pricePerCall": "0.02",
+    "seller": "0x0000000000000000000000000000000000000004",
+    "tags": ["storage", "ipfs", "pinning"],
+    "featured": false,
+    "apiEndpoint": "/api/paid/ipfs-pin"
+  },
+  {
+    "id": "sentiment-analysis",
+    "name": "Sentiment Analysis",
+    "description": "Analyze sentiment of text with confidence scores and entity extraction",
+    "category": "ai",
+    "pricePerCall": "0.03",
+    "seller": "0x0000000000000000000000000000000000000005",
+    "tags": ["ai", "nlp", "sentiment"],
+    "featured": false,
+    "apiEndpoint": "/api/paid/sentiment"
+  },
+  {
+    "id": "kyc-verify",
+    "name": "KYC Verification",
+    "description": "Verify identity documents and perform KYC checks",
+    "category": "identity",
+    "pricePerCall": "0.50",
+    "seller": "0x0000000000000000000000000000000000000006",
+    "tags": ["identity", "kyc", "compliance"],
+    "featured": false,
+    "apiEndpoint": "/api/paid/kyc"
+  }
+]

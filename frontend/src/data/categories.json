@@ -1,0 +1,44 @@
+[
+  {
+    "id": "ai",
+    "name": "AI & ML",
+    "description": "Machine learning models, language processing, and AI inference APIs",
+    "icon": "Brain",
+    "color": "primary"
+  },
+  {
+    "id": "data",
+    "name": "Data & Analytics",
+    "description": "Data feeds, analytics services, and business intelligence APIs",
+    "icon": "BarChart3",
+    "color": "accent"
+  },
+  {
+    "id": "compute",
+    "name": "Compute",
+    "description": "Serverless functions, GPU compute, and processing services",
+    "icon": "Cpu",
+    "color": "yellow"
+  },
+  {
+    "id": "storage",
+    "name": "Storage",
+    "description": "Decentralized storage, IPFS pinning, and file services",
+    "icon": "HardDrive",
+    "color": "green"
+  },
+  {
+    "id": "oracle",
+    "name": "Oracles",
+    "description": "Price feeds, randomness, and real-world data oracles",
+    "icon": "Radio",
+    "color": "purple"
+  },
+  {
+    "id": "identity",
+    "name": "Identity",
+    "description": "KYC verification, identity proofs, and authentication services",
+    "icon": "Fingerprint",
+    "color": "rose"
+  }
+]

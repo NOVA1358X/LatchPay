@@ -1,0 +1,36 @@
+{
+  "name": "latchpay-contracts",
+  "version": "1.0.0",
+  "description": "LatchPay Smart Contracts - Trust-minimized micropayments on Polygon",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "deploy:polygon": "hardhat run scripts/deploy-polygon.ts --network polygon",
+    "deploy:fork": "hardhat run scripts/deploy-polygon.ts --network hardhat",
+    "seed:polygon": "hardhat run scripts/seed-polygon.ts --network polygon",
+    "verify": "hardhat verify --network polygon",
+    "clean": "hardhat clean",
+    "typechain": "hardhat typechain"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.0",
+    "chai": "^4.3.10",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "hardhat": "^2.19.4",
+    "hardhat-gas-reporter": "^1.0.9",
+    "solidity-coverage": "^0.8.5",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

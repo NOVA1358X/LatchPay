@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build
+artifacts/
+cache/
+typechain-types/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+coverage.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Private keys - NEVER commit
+*.pem
+*.key
+privatekey*

@@ -1,0 +1,121 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+
+# Environment files (SENSITIVE - NEVER COMMIT)
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.env
+
+# Contract artifacts (can be regenerated)
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+
+# Hardhat
+contracts/coverage/
+contracts/coverage.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# TypeScript
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+
+# Local development
+.local/
+*.local
+
+# Secrets (CRITICAL - NEVER COMMIT)
+**/secrets/
+**/*.pem
+**/*.key
+**/private_key*
+**/secret*
+**/credentials*
+
+# Deployment keys
+deploy-key*
+*.p12
+*.pfx
+
+# Wallet files
+**/keystore/
+**/*.keystore
+**/wallet.json
+
+# Debug
+.debug/
+debug.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Package manager locks (optional - uncomment if not needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Editor directories
+.history/
+*.code-workspace
+
+# Generated documentation
+docs/api/
+typedoc/
+
+# Test fixtures with sensitive data
+**/fixtures/sensitive/
+**/test-data/private/
