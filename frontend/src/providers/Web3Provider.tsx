@@ -5,7 +5,7 @@ import { DynamicWagmiConnector } from '@dynamic-labs/wagmi-connector';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { polygon } from 'wagmi/chains';
 
-const DYNAMIC_ENV_ID = import.meta.env.VITE_DYNAMIC_ENV_ID || '85e1739c-adfe-4bf2-99ee-60e6bca200ab';
+const DYNAMIC_ENV_ID = import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID || import.meta.env.VITE_DYNAMIC_ENV_ID || '85e1739c-adfe-4bf2-99ee-60e6bca200ab';
 
 // Create wagmi config for Polygon Mainnet (Chain ID: 137)
 const wagmiConfig = createConfig({

@@ -30,9 +30,5 @@
       "maxDuration": 30,
       "memory": 256
     }
-  },
-  "env": {
-    "VITE_DYNAMIC_ENVIRONMENT_ID": "@vite_dynamic_environment_id",
-    "VITE_ALCHEMY_API_KEY": "@vite_alchemy_api_key"
   }
 }
