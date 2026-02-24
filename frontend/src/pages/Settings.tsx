@@ -18,14 +18,18 @@ import { addresses } from '../config/constants';
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
-  const [notifications, setNotifications] = useState({
-    payments: true,
-    disputes: true,
-    releases: false,
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const stored = localStorage.getItem('latchpay-notifications');
+      return stored ? JSON.parse(stored) : { payments: true, disputes: true, releases: false };
+    } catch {
+      return { payments: true, disputes: true, releases: false };
+    }
   });
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
+    localStorage.setItem('latchpay-notifications', JSON.stringify(notifications));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -210,7 +214,7 @@ export default function Settings() {
                   </div>
                   <button
                     onClick={() =>
-                      setNotifications((prev) => ({
+                      setNotifications((prev: typeof notifications) => ({
                         ...prev,
                         [item.key]: !prev[item.key as keyof typeof prev],
                       }))

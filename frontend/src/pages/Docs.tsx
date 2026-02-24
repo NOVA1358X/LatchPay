@@ -13,7 +13,8 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const sections = [
   { id: 'overview', label: 'Overview', icon: Book },
@@ -23,8 +24,24 @@ const sections = [
 ];
 
 export default function Docs() {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeSection, setActiveSection] = useState(() => {
+    return searchParams.get('section') || 'overview';
+  });
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Sync URL with section
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section && sections.some(s => s.id === section)) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
+
+  const handleSectionChange = (sectionId: string) => {
+    setActiveSection(sectionId);
+    setSearchParams({ section: sectionId });
+  };
 
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -67,7 +84,7 @@ export default function Docs() {
                   return (
                     <button
                       key={section.id}
-                      onClick={() => setActiveSection(section.id)}
+                      onClick={() => handleSectionChange(section.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                         activeSection === section.id
                           ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
@@ -88,7 +105,7 @@ export default function Docs() {
                 </h4>
                 <div className="space-y-2">
                   <a
-                    href="https://github.com/latchpay/latchpay"
+                    href="https://github.com/NOVA1358X/LatchPay"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-surface-600 dark:text-surface-400 hover:text-primary-600 dark:hover:text-primary-400"
@@ -232,6 +249,39 @@ function OverviewSection() {
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <FileCode className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-surface-900 dark:text-white">ReceiptStore</h4>
+                <p className="text-sm text-surface-600 dark:text-surface-400">
+                  Immutable on-chain storage for payment receipts and delivery proofs
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-surface-900 dark:text-white">ReputationEngine</h4>
+                <p className="text-sm text-surface-600 dark:text-surface-400">
+                  On-chain reputation scoring with leaderboard for sellers and buyers
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-surface-900 dark:text-white">PaymentRouter</h4>
+                <p className="text-sm text-surface-600 dark:text-surface-400">
+                  Batch payments and revenue splits for advanced payment workflows
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -264,7 +314,7 @@ function HowItWorksSection() {
     {
       number: 5,
       title: 'Payment Release',
-      description: 'After dispute window (default 15 min), funds release to seller.',
+      description: 'After the dispute window (seller-defined, minimum 1 hour), funds release to seller.',
     },
   ];
 
@@ -548,7 +598,7 @@ function SecuritySection() {
             'Always verify payment on-chain before delivering responses',
             'Use unique nonces for each payment to prevent replay attacks',
             'Store delivery receipts off-chain for dispute evidence',
-            'Set reasonable dispute windows (15-60 minutes recommended)',
+            'Set reasonable dispute windows (1-24 hours recommended)',
             'Monitor seller bonds and do not accept payments from unbonded sellers',
           ].map((tip, i) => (
             <div key={i} className="flex items-center gap-3 text-surface-600 dark:text-surface-400">

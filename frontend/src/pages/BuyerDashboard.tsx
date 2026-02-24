@@ -28,9 +28,10 @@ export default function BuyerDashboard() {
   const { primaryWallet } = useDynamicContext();
   const { payments, isLoading, refetch } = useBuyerPayments(primaryWallet?.address);
   const { disputePayment, refundPayment, isLoading: actionLoading } = useEscrow();
-  // Buyer reputation available for future UI expansion
-  useBuyerReputation(primaryWallet?.address);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  // Buyer reputation
+  const { reputation: buyerRep } = useBuyerReputation(primaryWallet?.address);
+  const buyerScore = buyerRep ? (buyerRep.reputationScore / 100).toFixed(1) : '0.0';
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'disputed'>('all');
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState('');
@@ -67,6 +68,7 @@ export default function BuyerDashboard() {
   const filteredPayments = payments.filter((payment) => {
     if (filter === 'pending') return payment.status === 0 || payment.status === 1;
     if (filter === 'completed') return payment.status === 2 || payment.status === 3;
+    if (filter === 'disputed') return payment.status === 4;
     return true;
   });
 
@@ -101,7 +103,7 @@ export default function BuyerDashboard() {
               Buyer Dashboard
             </h1>
             <p className="text-lg text-surface-600 dark:text-surface-400">
-              Manage your payments, receipts, and disputes
+              Manage your payments, receipts, and disputes {buyerRep ? `\u2022 Reputation: ${buyerScore}%` : ''}
             </p>
           </motion.div>
         </div>
@@ -113,10 +115,11 @@ export default function BuyerDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
         >
           {[
             { label: 'Total Payments', value: payments.length, icon: Receipt },
+            { label: 'Total Spent', value: `$${(payments.reduce((acc, p) => acc + Number(p.amount), 0) / 1e6).toFixed(2)}`, icon: Wallet },
             { label: 'Pending', value: payments.filter((p) => p.status === 0).length, icon: Clock },
             { label: 'Completed', value: payments.filter((p) => p.status === 2).length, icon: CheckCircle2 },
             { label: 'Disputed', value: payments.filter((p) => p.status === 4).length, icon: AlertTriangle },
@@ -141,7 +144,7 @@ export default function BuyerDashboard() {
         {/* Filters */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            {(['all', 'pending', 'completed'] as const).map((f) => (
+            {(['all', 'pending', 'completed', 'disputed'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -240,10 +243,11 @@ export default function BuyerDashboard() {
                         {status?.label}
                       </span>
                       <a
-                        href={`https://polygonscan.com/tx/${payment.paymentId}`}
+                        href={`https://polygonscan.com/address/${payment.seller || ''}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                        title="View seller on PolygonScan"
                       >
                         <ExternalLink className="w-4 h-4 text-surface-400" />
                       </a>
@@ -303,7 +307,7 @@ export default function BuyerDashboard() {
       {actionError && (
         <div className="fixed bottom-6 right-6 p-4 bg-red-100 dark:bg-red-900/80 rounded-xl shadow-lg z-50">
           <span className="text-red-700 dark:text-red-300">{actionError}</span>
-          <button onClick={() => setActionError(null)} className="ml-3 text-red-500 font-bold">x</button>
+          <button onClick={() => setActionError(null)} className="ml-3 text-red-500 font-bold hover:text-red-700">✕</button>
         </div>
       )}
 

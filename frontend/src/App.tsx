@@ -30,6 +30,16 @@ function App() {
             <Route path="/search" element={<PolygonSearch />} />
             <Route path="/docs" element={<Docs />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={
+              <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="text-center max-w-md">
+                  <h1 className="font-display text-6xl font-bold gradient-text mb-4">404</h1>
+                  <h2 className="text-xl font-semibold text-surface-900 dark:text-white mb-2">Page Not Found</h2>
+                  <p className="text-surface-600 dark:text-surface-400 mb-6">The page you're looking for doesn't exist or has been moved.</p>
+                  <a href="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-500 text-white hover:bg-primary-600 transition-colors font-medium">Back to Home</a>
+                </div>
+              </div>
+            } />
           </Routes>
         </Suspense>
       </AnimatePresence>

@@ -397,26 +397,28 @@ const { data, deliveryProof } = await response.json();`}
             </motion.div>
 
             {/* Tags */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="card p-6"
-            >
-              <h2 className="text-lg font-semibold text-surface-900 dark:text-white mb-4">
-                Tags
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {endpoint.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
+            {endpoint.tags.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="card p-6"
+              >
+                <h2 className="text-lg font-semibold text-surface-900 dark:text-white mb-4">
+                  Tags
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {endpoint.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 rounded-full bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400 text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
@@ -466,7 +468,7 @@ const { data, deliveryProof } = await response.json();`}
           <div className="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
             <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              Payment will be held in escrow until delivery is confirmed. You have a 24-hour window to dispute.
+              Payment will be held in escrow until delivery is confirmed. You have a {endpoint.disputeWindowHours}-hour window to dispute.
             </p>
           </div>
 

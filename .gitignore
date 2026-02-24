@@ -119,3 +119,4 @@ typedoc/
 # Test fixtures with sensitive data
 **/fixtures/sensitive/
 **/test-data/private/
+contracts/scripts/e2e-test-mainnet.ts

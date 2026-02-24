@@ -1,0 +1,31 @@
+{
+  "name": "AI Text Summarizer",
+  "description": "Powered by GPT-4, summarize any text with customizable length. Supports articles, documents, and web pages. Returns clean summarized text with key points extraction.",
+  "version": "1.0.0",
+  "category": "ai",
+  "apiEndpoint": "https://api.latchpay.example/v1/summarize",
+  "documentation": "https://github.com/NOVA1358X/LatchPay/blob/main/metadata/README.md",
+  "tags": ["ai", "nlp", "summarization", "gpt4"],
+  "author": "LatchPay Team",
+  "requestExample": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-LatchPay-Payment-Id": "<paymentId>"
+    },
+    "body": {
+      "text": "Your long text here...",
+      "max_length": 200,
+      "style": "bullet_points"
+    }
+  },
+  "responseExample": {
+    "summary": "Key points from the text...",
+    "key_points": [
+      "First important point",
+      "Second important point",
+      "Third important point"
+    ],
+    "word_count": 150
+  }
+}

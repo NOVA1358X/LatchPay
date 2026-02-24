@@ -133,6 +133,31 @@ export function useSellerActions() {
     }
   }, [walletClient, publicClient, registryAddress, queryClient]);
 
+  // Reactivate endpoint
+  const reactivateEndpoint = useCallback(async (endpointId: `0x${string}`) => {
+    if (!walletClient || !publicClient) {
+      throw new Error('Wallet not connected');
+    }
+
+    setIsLoading(true);
+
+    try {
+      const hash = await walletClient.writeContract({
+        address: registryAddress,
+        abi: ENDPOINT_REGISTRY_ABI,
+        functionName: 'reactivateEndpoint',
+        args: [endpointId],
+      } as any);
+
+      await publicClient.waitForTransactionReceipt({ hash });
+      queryClient.invalidateQueries({ queryKey: ['sellerEndpoints'] });
+
+      return hash;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [walletClient, publicClient, registryAddress, queryClient]);
+
   // Deposit bond
   const depositBond = useCallback(async (amount: string) => {
     if (!walletClient || !publicClient) {
@@ -235,6 +260,7 @@ export function useSellerActions() {
     registerEndpoint,
     updateEndpoint,
     deactivateEndpoint,
+    reactivateEndpoint,
     depositBond,
     requestWithdrawal,
     executeWithdrawal,

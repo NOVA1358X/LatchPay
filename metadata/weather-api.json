@@ -1,0 +1,33 @@
+{
+  "name": "Weather Forecast API",
+  "description": "Real-time weather data and 7-day forecasts for any city worldwide. Returns temperature, humidity, wind speed, and precipitation data in JSON format.",
+  "version": "1.0.0",
+  "category": "data",
+  "apiEndpoint": "https://api.latchpay.example/v1/weather",
+  "documentation": "https://github.com/NOVA1358X/LatchPay/blob/main/metadata/README.md",
+  "tags": ["weather", "forecast", "data", "api"],
+  "author": "LatchPay Team",
+  "logo": "https://raw.githubusercontent.com/NOVA1358X/LatchPay/main/metadata/logo-weather.svg",
+  "requestExample": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-LatchPay-Payment-Id": "<paymentId>"
+    },
+    "body": {
+      "city": "New York",
+      "units": "metric"
+    }
+  },
+  "responseExample": {
+    "city": "New York",
+    "temperature": 22.5,
+    "humidity": 65,
+    "wind_speed": 12.3,
+    "description": "Partly cloudy",
+    "forecast": [
+      { "day": "Mon", "high": 24, "low": 18 },
+      { "day": "Tue", "high": 26, "low": 19 }
+    ]
+  }
+}

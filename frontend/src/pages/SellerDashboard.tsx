@@ -30,7 +30,7 @@ export default function SellerDashboard() {
   const { bondInfo, isLoading: bondLoading, refetch: refetchBond } = useSellerBond(primaryWallet?.address);
   const { depositBond, withdrawBond, isLoading: bondActionLoading } = useBondActions();
   const { registerEndpoint, isLoading: isRegistering } = useRegisterEndpoint();
-  const { updateEndpoint, deactivateEndpoint, isLoading: sellerActionLoading } = useSellerActions();
+  const { updateEndpoint, deactivateEndpoint, reactivateEndpoint, isLoading: sellerActionLoading } = useSellerActions();
   const { reputation: sellerRep } = useSellerReputation(primaryWallet?.address);
   
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -256,8 +256,8 @@ export default function SellerDashboard() {
                           <Zap className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <p className="font-mono text-sm text-surface-500 dark:text-surface-400">
-                            {endpoint.endpointId.slice(0, 10)}...
+                          <p className="font-medium text-surface-900 dark:text-white text-sm truncate max-w-[200px]" title={endpoint.metadataURI}>
+                            {endpoint.metadataURI || `Endpoint ${endpoint.endpointId.slice(0, 10)}...`}
                           </p>
                           <p className="text-lg font-semibold gradient-text">
                             ${(Number(endpoint.pricePerCall) / 1e6).toFixed(4)}
@@ -308,8 +308,13 @@ export default function SellerDashboard() {
                         disabled={sellerActionLoading}
                         onClick={async () => {
                           try {
-                            await deactivateEndpoint(endpoint.endpointId as `0x${string}`);
-                            setActionMsg({ type: 'success', text: `Endpoint ${endpoint.active ? 'deactivated' : 'updated'}` });
+                            if (endpoint.active) {
+                              await deactivateEndpoint(endpoint.endpointId as `0x${string}`);
+                              setActionMsg({ type: 'success', text: 'Endpoint deactivated' });
+                            } else {
+                              await reactivateEndpoint(endpoint.endpointId as `0x${string}`);
+                              setActionMsg({ type: 'success', text: 'Endpoint activated' });
+                            }
                             refetchEndpoints();
                             setTimeout(() => setActionMsg(null), 3000);
                           } catch (err: any) {
@@ -458,14 +463,15 @@ export default function SellerDashboard() {
             </label>
             <input
               type="text"
-              placeholder="ipfs://... or https://..."
+              placeholder="https://example.com/api-metadata.json"
               className="input"
               value={regForm.metadataURI}
               onChange={(e) => setRegForm({ ...regForm, metadataURI: e.target.value })}
               disabled={isRegistering}
             />
             <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-              IPFS or HTTP URL pointing to your endpoint metadata JSON
+              URL to a JSON file with your API name, description, and endpoint URL.
+              Use any public URL (e.g., GitHub raw file, IPFS, or your own domain).
             </p>
           </div>
 

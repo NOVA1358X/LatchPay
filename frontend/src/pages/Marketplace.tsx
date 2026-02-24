@@ -250,11 +250,23 @@ export default function Marketplace() {
                               Featured
                             </span>
                           )}
+                          {endpoint.isOnchain && !endpoint.featured && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                              On-chain
+                            </span>
+                          )}
                         </div>
 
                         <p className="text-surface-600 dark:text-surface-400 text-sm mb-4 line-clamp-2">
                           {endpoint.description}
                         </p>
+
+                        {endpoint.isOnchain && (
+                          <p className="text-xs text-surface-400 dark:text-surface-500 mb-2 font-mono truncate">
+                            ID: {endpoint.id.slice(0, 14)}...{endpoint.id.slice(-6)}
+                          </p>
+                        )}
 
                         <div className="flex items-center justify-between pt-4 border-t border-surface-200 dark:border-surface-800">
                           <div>

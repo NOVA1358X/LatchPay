@@ -1,0 +1,30 @@
+{
+  "name": "Crypto Price Oracle",
+  "description": "Real-time cryptocurrency price feeds for 500+ tokens. Supports historical OHLCV data, price alerts, and multi-chain token prices. Data sourced from top DEXs and CEXs.",
+  "version": "1.0.0",
+  "category": "oracle",
+  "apiEndpoint": "https://api.latchpay.example/v1/prices",
+  "documentation": "https://github.com/NOVA1358X/LatchPay/blob/main/metadata/README.md",
+  "tags": ["oracle", "prices", "defi", "crypto"],
+  "author": "LatchPay Team",
+  "requestExample": {
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-LatchPay-Payment-Id": "<paymentId>"
+    },
+    "body": {
+      "token": "ETH",
+      "vs_currency": "USD",
+      "include_24h_change": true
+    }
+  },
+  "responseExample": {
+    "token": "ETH",
+    "price_usd": 3245.67,
+    "change_24h": 2.45,
+    "volume_24h": 15234567890,
+    "market_cap": 389000000000,
+    "last_updated": "2026-02-24T12:00:00Z"
+  }
+}

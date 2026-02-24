@@ -7,19 +7,19 @@ const footerLinks = {
     { label: 'Marketplace', href: '/marketplace' },
     { label: 'Documentation', href: '/docs' },
     { label: 'Explorer', href: '/search' },
-    { label: 'API Reference', href: '/docs#api' },
+    { label: 'Seller Dashboard', href: '/seller' },
   ],
   developers: [
-    { label: 'Getting Started', href: '/docs#getting-started' },
-    { label: 'Integration Guide', href: '/docs#integration' },
-    { label: 'Smart Contracts', href: '/docs#contracts' },
-    { label: 'GitHub', href: 'https://github.com/latchpay', external: true },
+    { label: 'Getting Started', href: '/docs?section=overview' },
+    { label: 'Integration Guide', href: '/docs?section=integration' },
+    { label: 'Smart Contracts', href: '/settings' },
+    { label: 'GitHub', href: 'https://github.com/NOVA1358X/LatchPay', external: true },
   ],
   resources: [
-    { label: 'Blog', href: '#' },
-    { label: 'Security', href: '/docs#security' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Privacy Policy', href: '#' },
+    { label: 'How It Works', href: '/docs?section=how-it-works' },
+    { label: 'Security', href: '/docs?section=security' },
+    { label: 'Buyer Dashboard', href: '/buyer' },
+    { label: 'Settings', href: '/settings' },
   ],
 };
 
@@ -45,11 +45,12 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-surface-400 hover:text-primary-500 transition-colors"
+                aria-label="Twitter"
               >
                 <Twitter className="w-5 h-5" />
               </a>
               <a
-                href="https://github.com/latchpay"
+                href="https://github.com/NOVA1358X/LatchPay"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-surface-400 hover:text-primary-500 transition-colors"
