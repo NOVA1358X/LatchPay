@@ -6,20 +6,21 @@ export const USDC_DECIMALS = 6;
 // Default RPC URL
 export const DEFAULT_RPC_URL = import.meta.env.VITE_PUBLIC_POLYGON_RPC_URL || 'https://polygon-rpc.com/';
 
-// Load deployed addresses - env vars take priority over JSON file
+// Load deployed addresses from JSON (auto-updated by deploy script)
 import addressesJson from './addresses.137.json';
 
-// Contract addresses - use env vars first, then JSON file as fallback
+// Contract addresses - JSON file is the single source of truth
+// The deploy script writes to addresses.137.json which is committed to git
 export const addresses = {
   chainId: POLYGON_CHAIN_ID,
   usdc: USDC_ADDRESS,
-  EndpointRegistry: (import.meta.env.VITE_ENDPOINT_REGISTRY_ADDRESS || addressesJson.EndpointRegistry || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  EscrowVault: (import.meta.env.VITE_ESCROW_VAULT_ADDRESS || addressesJson.EscrowVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  SellerBondVault: (import.meta.env.VITE_SELLER_BOND_VAULT_ADDRESS || addressesJson.SellerBondVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  ReceiptStore: (import.meta.env.VITE_RECEIPT_STORE_ADDRESS || addressesJson.ReceiptStore || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  ReputationEngine: (import.meta.env.VITE_REPUTATION_ENGINE_ADDRESS || (addressesJson as any).ReputationEngine || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  PaymentRouter: (import.meta.env.VITE_PAYMENT_ROUTER_ADDRESS || (addressesJson as any).PaymentRouter || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-  deploymentBlock: parseInt(import.meta.env.VITE_BLOCK_SCAN_FROM || '0') || addressesJson.deploymentBlock || 0,
+  EndpointRegistry: (addressesJson.EndpointRegistry || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  EscrowVault: (addressesJson.EscrowVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  SellerBondVault: (addressesJson.SellerBondVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  ReceiptStore: (addressesJson.ReceiptStore || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  ReputationEngine: ((addressesJson as any).ReputationEngine || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  PaymentRouter: ((addressesJson as any).PaymentRouter || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  deploymentBlock: addressesJson.deploymentBlock || 0,
 };
 
 // Validate addresses are set
