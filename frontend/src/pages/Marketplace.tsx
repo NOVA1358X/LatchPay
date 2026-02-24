@@ -50,6 +50,19 @@ export default function Marketplace() {
   // Get onchain endpoints
   const { endpoints: onchainEndpoints, isLoading } = useEndpoints();
 
+  // Derive a human-readable name from a metadataURI when no static name is available
+  const nameFromURI = (uri: string): string => {
+    try {
+      const filename = uri.split('/').pop()?.replace(/\.json$/i, '') || uri;
+      return filename
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .slice(0, 60);
+    } catch {
+      return uri.slice(0, 40) + '...';
+    }
+  };
+
   // Merge: prioritize on-chain data, show static entries only if no on-chain match
   const endpoints = useMemo(() => {
     // Map on-chain endpoints into display format
@@ -57,7 +70,7 @@ export default function Marketplace() {
       const staticMatch = featuredEndpointsData.find((s) => s.id === ep.endpointId);
       return {
         id: ep.endpointId,
-        name: staticMatch?.name || ep.metadataURI || `Endpoint ${ep.endpointId.slice(0, 10)}...`,
+        name: staticMatch?.name || nameFromURI(ep.metadataURI) || `Endpoint ${ep.endpointId.slice(0, 10)}...`,
         description: staticMatch?.description || 'On-chain API endpoint',
         category: staticMatch?.category || ep.category || 'compute',
         pricePerCall: (Number(ep.pricePerCall) / 1e6).toFixed(6),

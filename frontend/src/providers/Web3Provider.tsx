@@ -40,7 +40,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
                 symbol: 'MATIC',
                 decimals: 18,
               },
-              rpcUrls: ['https://polygon.llamarpc.com', 'https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'],
+              rpcUrls: ['https://polygon-bor-rpc.publicnode.com', 'https://1rpc.io/matic', 'https://polygon-rpc.com'],
               blockExplorerUrls: ['https://polygonscan.com'],
             },
           ],

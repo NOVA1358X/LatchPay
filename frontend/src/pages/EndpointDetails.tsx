@@ -35,6 +35,19 @@ export default function EndpointDetails() {
   const { endpoints: onchainEndpoints } = useEndpoints();
   const { openPayment, isLoading: isProcessing } = useEscrow();
 
+  // Derive a human-readable name from a metadataURI
+  const nameFromURI = (uri: string): string => {
+    try {
+      const filename = uri.split('/').pop()?.replace(/\.json$/i, '') || uri;
+      return filename
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .slice(0, 80);
+    } catch {
+      return uri.slice(0, 40) + '...';
+    }
+  };
+
   // Find on-chain endpoint first, fallback to static data
   const onchainEndpoint = useMemo(() => {
     return onchainEndpoints.find((e) => e.endpointId === endpointId);
@@ -49,7 +62,7 @@ export default function EndpointDetails() {
     if (onchainEndpoint) {
       return {
         id: onchainEndpoint.endpointId,
-        name: onchainEndpoint.metadataURI || `Endpoint ${onchainEndpoint.endpointId.slice(0, 10)}...`,
+        name: onchainEndpoint.metadataURI ? nameFromURI(onchainEndpoint.metadataURI) : `Endpoint ${onchainEndpoint.endpointId.slice(0, 10)}...`,
         description: staticEndpoint?.description || 'On-chain API endpoint',
         category: onchainEndpoint.category || staticEndpoint?.category || 'compute',
         pricePerCall: (Number(onchainEndpoint.pricePerCall) / 1e6).toFixed(6),
@@ -149,8 +162,8 @@ export default function EndpointDetails() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
                 <Zap className="w-8 h-8 text-white" />
               </div>
-              <div>
-                <h1 className="font-display text-3xl font-bold text-surface-900 dark:text-white mb-2">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-display text-3xl font-bold text-surface-900 dark:text-white mb-2 break-words">
                   {endpoint.name}
                 </h1>
                 <p className="text-surface-600 dark:text-surface-400">
@@ -165,7 +178,7 @@ export default function EndpointDetails() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4 mt-4 lg:mt-0 lg:flex-shrink-0">
               <div className="text-right">
                 <div className="text-3xl font-bold gradient-text">
                   ${endpoint.pricePerCall}

@@ -3,9 +3,9 @@ import { polygon } from 'viem/chains';
 
 // Multiple public RPCs with automatic fallback — no API key required
 export const POLYGON_RPCS = [
-  'https://polygon.llamarpc.com',
   'https://polygon-bor-rpc.publicnode.com',
   'https://1rpc.io/matic',
+  'https://rpc-mainnet.matic.quiknode.pro',
   'https://polygon-rpc.com',
 ];
 
