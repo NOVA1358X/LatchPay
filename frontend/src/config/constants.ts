@@ -49,3 +49,12 @@ export const CATEGORY_LABELS: Record<string, string> = {
   [CATEGORIES.STORAGE]: 'Storage',
   [CATEGORIES.ORACLE]: 'Oracle',
 };
+
+// Maps on-chain bytes32 category hash -> categories.json id string
+export const CATEGORY_IDS: Record<string, string> = {
+  [CATEGORIES.AI]: 'ai',
+  [CATEGORIES.DATA]: 'data',
+  [CATEGORIES.COMPUTE]: 'compute',
+  [CATEGORIES.STORAGE]: 'storage',
+  [CATEGORIES.ORACLE]: 'oracle',
+};

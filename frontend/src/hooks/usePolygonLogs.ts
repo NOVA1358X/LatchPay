@@ -5,6 +5,9 @@ import { publicClient } from '../lib/viem';
 import addresses from '../config/addresses.137.json';
 import { ESCROW_ABI } from '../lib/contracts';
 
+// Scan from deployment block to capture all historical events
+const DEPLOYMENT_BLOCK = BigInt(addresses.deploymentBlock || 83419504);
+
 export interface LogEvent {
   eventName: string;
   transactionHash: string;
@@ -19,8 +22,6 @@ interface UsePolygonLogsOptions {
   seller?: string;
   endpointId?: string;
 }
-
-const BLOCK_RANGE = 10000n; // ~6 hours of blocks
 
 // Event signatures for filtering
 const eventSignatures: Record<string, string> = {
@@ -51,8 +52,8 @@ export function usePolygonLogs(options: UsePolygonLogsOptions = {}) {
     queryFn: async () => {
       if (!blockNumber) return [];
       
-      // Get logs from the last BLOCK_RANGE blocks
-      const startBlock = blockNumber > BLOCK_RANGE ? blockNumber - BLOCK_RANGE : 0n;
+      // Scan from deployment block to capture all events since contract was deployed
+      const startBlock = DEPLOYMENT_BLOCK;
 
       const escrowAddress = addresses.EscrowVault as `0x${string}`;
       const registryAddress = addresses.EndpointRegistry as `0x${string}`;

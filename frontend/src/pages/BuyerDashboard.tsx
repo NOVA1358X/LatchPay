@@ -17,7 +17,7 @@ import { useEscrow } from '../hooks/useEscrow';
 import { useBuyerReputation } from '../hooks/useReputation';
 
 const statusConfig = {
-  0: { label: 'Pending', icon: Clock, color: 'yellow' },
+  0: { label: 'Awaiting Delivery', icon: Clock, color: 'yellow' },
   1: { label: 'Delivered', icon: CheckCircle2, color: 'blue' },
   2: { label: 'Released', icon: CheckCircle2, color: 'green' },
   3: { label: 'Refunded', icon: RefreshCw, color: 'purple' },
@@ -27,7 +27,7 @@ const statusConfig = {
 export default function BuyerDashboard() {
   const { primaryWallet } = useDynamicContext();
   const { payments, isLoading, refetch } = useBuyerPayments(primaryWallet?.address);
-  const { disputePayment, refundPayment, isLoading: actionLoading } = useEscrow();
+  const { disputePayment, refundPayment, releasePayment, isLoading: actionLoading } = useEscrow();
   // Buyer reputation
   const { reputation: buyerRep } = useBuyerReputation(primaryWallet?.address);
   const buyerScore = buyerRep ? (buyerRep.reputationScore / 100).toFixed(1) : '0.0';
@@ -258,9 +258,12 @@ export default function BuyerDashboard() {
                   {(payment.status === 0 || payment.status === 1) && (
                     <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-800 flex items-center justify-between">
                       <p className="text-sm text-surface-600 dark:text-surface-400">
-                        Dispute window ends: {new Date(Number(payment.disputeWindowEnds) * 1000).toLocaleString()}
+                        {payment.status === 0
+                          ? 'Awaiting seller delivery. After the dispute window, you can release payment or request a refund.'
+                          : `Dispute window ends: ${new Date(Number(payment.disputeWindowEnds) * 1000).toLocaleString()}`
+                        }
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 ml-4 shrink-0">
                         {payment.status === 1 && (
                           <Button
                             variant="danger"
@@ -273,6 +276,24 @@ export default function BuyerDashboard() {
                             }}
                           >
                             Dispute
+                          </Button>
+                        )}
+                        {payment.status === 0 && Date.now() / 1000 > Number(payment.disputeWindowEnds) && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={actionLoading ? Loader2 : CheckCircle2}
+                            disabled={actionLoading}
+                            onClick={async () => {
+                              try {
+                                await releasePayment(payment.paymentId as `0x${string}`);
+                                refetch();
+                              } catch (err: any) {
+                                setActionError(err?.shortMessage || err?.message || 'Release failed');
+                              }
+                            }}
+                          >
+                            Release
                           </Button>
                         )}
                         {payment.status === 0 && (

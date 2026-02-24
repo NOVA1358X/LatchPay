@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button, CardSkeleton } from '../components/common';
 import { useEndpoints } from '../hooks/useEndpoints';
+import { CATEGORY_IDS } from '../config/constants';
 import categoriesData from '../data/categories.json';
 import featuredEndpointsData from '../data/featured-endpoints.json';
 
@@ -72,7 +73,7 @@ export default function Marketplace() {
         id: ep.endpointId,
         name: staticMatch?.name || nameFromURI(ep.metadataURI) || `Endpoint ${ep.endpointId.slice(0, 10)}...`,
         description: staticMatch?.description || 'On-chain API endpoint',
-        category: staticMatch?.category || ep.category || 'compute',
+        category: staticMatch?.category || CATEGORY_IDS[ep.category] || 'compute',
         pricePerCall: (Number(ep.pricePerCall) / 1e6).toFixed(6),
         seller: ep.seller,
         tags: staticMatch?.tags || [],
