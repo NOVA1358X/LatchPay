@@ -120,3 +120,4 @@ typedoc/
 **/fixtures/sensitive/
 **/test-data/private/
 contracts/scripts/e2e-test-mainnet.ts
+about.md

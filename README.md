@@ -13,7 +13,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1-646CFF.svg?logo=vite)](https://vitejs.dev/)
 
-[Live Demo](https://latchpay.vercel.app) • [Documentation](#-documentation) • [Smart Contracts](#-smart-contracts) • [API Reference](#-api-reference)
+[Live Demo](https://latch-pay-r.vercel.app) • [Documentation](#-documentation) • [Smart Contracts](#-smart-contracts) • [API Reference](#-api-reference)
 
 </div>
 
@@ -39,6 +39,8 @@ LatchPay solves these with:
 - **Near-Zero Fees**: Polygon's low gas (~$0.001-0.01 per tx)
 - **Dispute Resolution**: Time-limited window to challenge bad service
 - **Seller Bonds**: Economic security via slashable collateral
+- **On-Chain Reputation**: Composite reputation scoring for sellers & buyers
+- **Batch Payments & Revenue Splits**: Advanced routing via PaymentRouter
 
 ---
 
@@ -47,29 +49,35 @@ LatchPay solves these with:
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           LatchPay Protocol                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌──────────┐    HTTP 402     ┌──────────┐    Register    ┌───────────┐ │
-│  │          │ ◄────────────── │          │ ──────────────▶│ Endpoint  │ │
-│  │  Buyer   │                 │  Seller  │                │ Registry  │ │
-│  │  Client  │ ───────────────▶│   API    │                └───────────┘ │
-│  │          │   Paid Request  │          │                              │
-│  └────┬─────┘                 └────┬─────┘                              │
-│       │                            │                                     │
-│       │ Open Escrow                │ Confirm Delivery                    │
-│       │                            │                                     │
-│       ▼                            ▼                                     │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │                        Polygon PoS Network                       │    │
-│  │  ┌───────────┐  ┌──────────────┐  ┌───────────┐  ┌───────────┐  │    │
-│  │  │  Escrow   │  │ SellerBond   │  │  Receipt  │  │   USDC    │  │    │
-│  │  │   Vault   │  │    Vault     │  │   Store   │  │  Token    │  │    │
-│  │  └───────────┘  └──────────────┘  └───────────┘  └───────────┘  │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            LatchPay Protocol (Wave 6)                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────┐    HTTP 402     ┌──────────┐    Register    ┌───────────────┐  │
+│  │          │ ◄────────────── │          │ ──────────────▶│   Endpoint    │  │
+│  │  Buyer   │                 │  Seller  │                │   Registry    │  │
+│  │  Client  │ ───────────────▶│   API    │                └───────────────┘  │
+│  │          │   Paid Request  │          │                                   │
+│  └────┬─────┘                 └────┬─────┘                                   │
+│       │                            │                                          │
+│       │ Open Escrow                │ Confirm Delivery                         │
+│       │                            │                                          │
+│       ▼                            ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────────┐     │
+│  │                         Polygon PoS Network                          │     │
+│  │                                                                      │     │
+│  │  ┌────────────┐  ┌──────────────┐  ┌────────────┐  ┌─────────────┐  │     │
+│  │  │   Escrow   │  │  SellerBond  │  │  Receipt   │  │  Reputation │  │     │
+│  │  │   Vault    │  │    Vault     │  │   Store    │  │   Engine    │  │     │
+│  │  └────────────┘  └──────────────┘  └────────────┘  └─────────────┘  │     │
+│  │                                                                      │     │
+│  │  ┌────────────┐  ┌──────────────┐                                    │     │
+│  │  │  Payment   │  │    USDC      │                                    │     │
+│  │  │   Router   │  │   Token      │                                    │     │
+│  │  └────────────┘  └──────────────┘                                    │     │
+│  └──────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Payment Flow
@@ -101,15 +109,15 @@ LatchPay solves these with:
      │ ◀────────────────────────────────────────────────── │
      │                                                     │
      │            ┌─────────────┐                          │
-     │            │  24h Dispute│                          │
+     │            │  Dispute    │  ← Configurable window   │
      │            │   Window    │                          │
      │            └──────┬──────┘                          │
      │                   │                                 │
      │                   ▼                                 │
-     │            ┌─────────────┐                          │
-     │            │   Funds     │ ─────────────────────────│
-     │            │  Released   │                          │
-     │            └─────────────┘                          │
+     │  ┌─────────────┐     ┌──────────────────┐          │
+     │  │   Funds     │────▶│ Reputation Score  │          │
+     │  │  Released   │     │    Updated        │          │
+     │  └─────────────┘     └──────────────────┘          │
      │                                                     │
 ```
 
@@ -140,15 +148,20 @@ LatchPay is deployed on **Polygon PoS** for several key advantages:
 
 ## 📜 Smart Contracts
 
-### Deployed Addresses (Polygon Mainnet)
+### Deployed Addresses (Polygon Mainnet — Block 83419504)
 
 | Contract | Address | Description |
 |----------|---------|-------------|
-| **EndpointRegistry** | `0xB949Eb2167CD7669e688B292924829364698d158` | API endpoint registry |
-| **EscrowVault** | `0xE15194bac21572E14dAEf4e1f3762083957375F4` | Payment escrow |
-| **SellerBondVault** | `0xf00035923C1A85E146de312E55ABe9270F7Bb702` | Seller collateral |
-| **ReceiptStore** | `0xb11e66d9a63DC8206DAaFD7037c6730a09A360C7` | On-chain receipts |
+| **EndpointRegistry** | `0xe6B482BD271E02BD4CF9c58a895ac1e721aBdf04` | API endpoint registry |
+| **EscrowVault** | `0xadb05512B6a2FD89Dfc01bC6f2276f0ceCCEAfB5` | Payment escrow with EIP-712 proofs |
+| **SellerBondVault** | `0x648F2A0d86B998a76FaD2e454D9909CDd37f5A8e` | Seller collateral & slashing |
+| **ReceiptStore** | `0xCF314A60a395e0bfd1E09108d6bA1cdB17D8Bf16` | Immutable on-chain receipts |
+| **ReputationEngine** | `0xa5b5FC4F47aacDaf86404754CE15EB48a4dEdCe6` | On-chain reputation scoring |
+| **PaymentRouter** | `0x6b0f731bBF78D2FF9538F0B44e7589B62C209964` | Batch payments & revenue splits |
 | **USDC** | `0x3c499c542cef5e3811e1192ce70d8cc03d5c3359` | Circle's native USDC |
+
+> **Deployer:** `0xd8518e143f594D05f8e0e4401dfF7a2387aA2b1d`  
+> **Deployed:** 2026-02-24 — All contracts verified on PolygonScan
 
 ### Contract Details
 
@@ -156,11 +169,12 @@ LatchPay is deployed on **Polygon PoS** for several key advantages:
 Manages API endpoint listings with metadata, pricing, and discovery.
 
 **Features:**
-- Register/update API endpoints
-- Set per-call pricing in USDC
-- Define dispute windows
-- Category-based discovery
+- Register/update API endpoints with JSON metadata URI
+- Set per-call pricing in USDC (6 decimals)
+- Define configurable dispute windows
+- Category-based discovery (AI, Data, Compute, Storage, Oracle)
 - Active/inactive status management
+- Call counter incremented automatically by EscrowVault
 
 **Key Functions:**
 ```solidity
@@ -178,14 +192,16 @@ function getSellerEndpoints(address seller) returns (bytes32[])
 ```
 
 #### 🔒 EscrowVault
-Holds buyer payments in escrow until delivery is proven.
+Holds buyer payments in escrow until delivery is proven via EIP-712 signatures.
 
 **Features:**
 - USDC escrow with atomic operations
-- EIP-712 typed signature verification
-- Time-locked dispute windows
-- Automatic release after window expires
+- EIP-712 typed signature verification for delivery proofs
+- Configurable dispute windows per endpoint
+- Automatic release after dispute window expires
 - Refund mechanism for failed deliveries
+- Integrates with ReputationEngine for score updates
+- Stores receipts in ReceiptStore on delivery confirmation
 
 **Key Functions:**
 ```solidity
@@ -201,7 +217,7 @@ function confirmDelivery(
     bytes sellerSignature
 )
 
-function claimPayment(bytes32 paymentId)
+function releasePayment(bytes32 paymentId)
 function refund(bytes32 paymentId)
 ```
 
@@ -211,9 +227,10 @@ Manages seller collateral with rule-based slashing.
 **Features:**
 - USDC bond deposits
 - 7-day minimum lock period
-- Slashing for proven misbehavior
+- Slashing for proven misbehavior (max 50%)
 - Active payment tracking
-- Withdrawal restrictions during active payments
+- Withdrawal restrictions during active escrows
+- Slash records with reason strings
 
 **Key Functions:**
 ```solidity
@@ -226,10 +243,43 @@ function slash(address seller, bytes32 paymentId, uint256 amount, string reason)
 Immutable on-chain storage for delivery receipts.
 
 **Features:**
-- Permanent receipt storage
-- Request/response hash verification
-- Timestamp tracking
-- Public verifiability
+- Permanent receipt storage per payment
+- Delivery hash + response metadata hash
+- Timestamp and amount tracking
+- Public verifiability for auditing
+
+#### ⭐ ReputationEngine
+On-chain reputation scoring for sellers and buyers.
+
+**Features:**
+- Composite score formula: `(successRate × 70%) + (lowDisputeRate × 20%) + (volumeBonus × 10%)`
+- Tracks deliveries, disputes, refunds, and USDC volume
+- Separate seller and buyer scoring
+- Top-50 seller leaderboard
+- Score queries callable by any contract or frontend
+
+**Key Functions:**
+```solidity
+function getSellerCompositeScore(address seller) returns (uint256)
+function getBuyerCompositeScore(address buyer) returns (uint256)
+function getTopSellers() returns (address[])
+```
+
+#### 🔀 PaymentRouter
+Advanced payment routing for batch operations and revenue sharing.
+
+**Features:**
+- Batch `openEscrow` calls (up to 10 per tx)
+- Configurable revenue splits (up to 5 recipients per seller)
+- Split balance accumulation and withdrawal
+- Convenience wrapper around EscrowVault
+
+**Key Functions:**
+```solidity
+function batchOpenEscrow(BatchPaymentParams[] params) returns (BatchPaymentResult[])
+function configureRevenueSplit(address[] recipients, uint256[] sharesBps)
+function withdrawSplitBalance()
+```
 
 ---
 
@@ -239,56 +289,55 @@ Immutable on-chain storage for delivery receipts.
 
 #### 🏠 Landing Page (`/`)
 - Hero section with value proposition
-- Feature highlights
-- How it works explanation
-- Featured API endpoints
+- Feature highlights with animated cards
+- How it works step-by-step
+- Featured API endpoints from marketplace
 - Call-to-action buttons
 
 #### 🛒 Marketplace (`/marketplace`)
 - Browse all registered API endpoints
 - Filter by category (AI, Data, Compute, Storage, Oracle)
-- Search functionality
-- Price and rating display
+- Smart name extraction from metadata URI
+- Price display in USDC
 - Quick-buy actions
 
 #### 📊 Endpoint Details (`/endpoint/:id`)
-- Full endpoint documentation
-- Pricing information
-- Seller reputation
-- Usage examples
-- Direct purchase flow
+- Full endpoint metadata display
+- Pricing information with USDC amounts
+- Seller reputation score
+- Direct purchase flow with USDC approval
+- Responsive layout for long metadata URIs
 
 #### 💼 Buyer Dashboard (`/buyer`)
-- Payment history
-- Active escrows
+- Payment history with real-time status tracking
+- Active escrows with "Awaiting Delivery" status
+- Release button (appears when dispute window expires)
 - Dispute management
-- Receipt downloads
-- Usage analytics
+- Receipt verification
 
 #### 🏪 Seller Dashboard (`/seller`)
-- Register new endpoints
-- Manage existing endpoints
-- View earnings
-- Bond management
-- Payment tracking
+- Register new endpoints with metadata URI
+- Manage existing endpoints (activate/deactivate)
+- View earnings and claimed payments
+- Bond management (deposit/withdraw)
+- Delivery confirmation with EIP-712 signatures
 
 #### 🔍 Polygon Explorer (`/explorer`)
-- Real-time blockchain data
-- Transaction search
-- Contract interactions
-- Network statistics
+- Full historical event scanning from deployment block
+- EndpointRegistered, EscrowOpened, DeliveryConfirmed events
+- Transaction hash + address linking to PolygonScan
+- Real-time network statistics
 
 #### 📚 Documentation (`/docs`)
 - Integration guides
 - API reference
 - Smart contract docs
-- SDK documentation
+- Metadata JSON examples
 
 #### ⚙️ Settings (`/settings`)
 - Wallet management
 - Network switching
 - Theme preferences
-- Notification settings
 
 ### Tech Stack
 
@@ -297,11 +346,22 @@ Immutable on-chain storage for delivery receipts.
 | **Framework** | React 18 + TypeScript |
 | **Build** | Vite 5.1 |
 | **Styling** | TailwindCSS 3.4 |
-| **Web3** | wagmi + viem |
+| **Web3** | wagmi 3.4 + viem 2.45 |
 | **Wallet** | Dynamic.xyz SDK |
 | **State** | TanStack Query |
 | **Animation** | Framer Motion |
 | **Routing** | React Router 6 |
+| **RPC** | Multi-RPC fallback (no API key needed) |
+
+### RPC Configuration
+
+LatchPay uses a **multi-RPC fallback transport** — no API keys required:
+
+```
+publicnode → 1rpc → quiknode → polygon-rpc
+```
+
+If one provider is down, the next is tried automatically. Both the standalone `publicClient` (used in hooks) and the wallet provider share this fallback configuration.
 
 ---
 
@@ -312,7 +372,7 @@ Immutable on-chain storage for delivery receipts.
 - Node.js >= 18.x
 - npm >= 9.x
 - MetaMask or compatible wallet
-- MATIC for gas fees
+- POL (MATIC) for gas fees
 - USDC for payments
 
 ### Installation
@@ -336,21 +396,16 @@ npm install
 **contracts/.env:**
 ```env
 PRIVATE_KEY=your_deployer_private_key
-ALCHEMY_RPC_URL=https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY
 POLYGONSCAN_API_KEY=your_polygonscan_key
 ```
 
 **frontend/.env:**
 ```env
-VITE_DYNAMIC_ENVIRONMENT_ID=your_dynamic_env_id
-VITE_ALCHEMY_API_KEY=your_alchemy_key
-
-# Contract Addresses (already deployed)
-VITE_ENDPOINT_REGISTRY_ADDRESS=0xB949Eb2167CD7669e688B292924829364698d158
-VITE_ESCROW_VAULT_ADDRESS=0xE15194bac21572E14dAEf4e1f3762083957375F4
-VITE_SELLER_BOND_VAULT_ADDRESS=0xf00035923C1A85E146de312E55ABe9270F7Bb702
-VITE_RECEIPT_STORE_ADDRESS=0xb11e66d9a63DC8206DAaFD7037c6730a09A360C7
+VITE_DYNAMIC_ENV_ID=your_dynamic_environment_id
+VITE_DEFAULT_CHAIN_ID=137
 ```
+
+> **Note:** Contract addresses are loaded automatically from `src/config/addresses.137.json` — no address environment variables needed. RPC uses public endpoints with automatic fallback — no API keys required.
 
 ### Run Development Server
 
@@ -359,7 +414,7 @@ cd frontend
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:5173](http://localhost:5173)
 
 ### Build for Production
 
@@ -383,23 +438,23 @@ npm run build
    - Framework Preset: Vite
    - Build Command: `npm run build`
    - Output Directory: `dist`
+   - Add `.npmrc` with `legacy-peer-deps=true` (already included)
 
 3. **Set Environment Variables**
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_DYNAMIC_ENVIRONMENT_ID` | Dynamic.xyz environment ID |
-| `VITE_ALCHEMY_API_KEY` | Alchemy API key for RPC |
-| `VITE_ENDPOINT_REGISTRY_ADDRESS` | EndpointRegistry contract |
-| `VITE_ESCROW_VAULT_ADDRESS` | EscrowVault contract |
-| `VITE_SELLER_BOND_VAULT_ADDRESS` | SellerBondVault contract |
-| `VITE_RECEIPT_STORE_ADDRESS` | ReceiptStore contract |
-| `OPENAI_API_KEY` | (Optional) For AI endpoints |
+| `VITE_DYNAMIC_ENV_ID` | Dynamic.xyz environment ID |
+| `VITE_DEFAULT_CHAIN_ID` | `137` (Polygon Mainnet) |
+
+> Contract addresses are built-in via `addresses.137.json`. Multi-RPC fallback uses public endpoints — no API keys needed.
 
 4. **Deploy**
    - Click Deploy
    - Wait for build to complete
    - Access your live site!
+
+**Live:** [https://latch-pay-r.vercel.app](https://latch-pay-r.vercel.app)
 
 ---
 
@@ -437,26 +492,24 @@ if (response.status === 402) {
 }
 ```
 
-### SDK Example
+### Metadata JSON Format
 
-```typescript
-import { LatchPayClient } from '@latchpay/sdk';
+Endpoints use JSON metadata hosted at a URI. Example:
 
-const client = new LatchPayClient({
-  rpcUrl: 'https://polygon-rpc.com',
-  signer: yourWalletSigner
-});
-
-// Pay and call in one step
-const result = await client.payAndCall({
-  endpoint: 'https://api.example.com/paid/summarize',
-  method: 'POST',
-  body: { text: 'Long text to summarize...' }
-});
-
-console.log(result.data); // API response
-console.log(result.receipt); // On-chain receipt
+```json
+{
+  "name": "AI Text Summarizer",
+  "description": "Summarizes long text using GPT-4",
+  "category": "ai",
+  "version": "1.0.0",
+  "endpoint": "https://api.example.com/summarize",
+  "method": "POST",
+  "pricing": { "perCall": "0.10", "currency": "USDC" },
+  "sla": { "maxLatency": "5s", "uptime": "99.5%" }
+}
 ```
+
+See the `metadata/` folder for more examples.
 
 ---
 
@@ -467,56 +520,65 @@ console.log(result.receipt); // On-chain receipt
 | Component | Trust Level | Notes |
 |-----------|-------------|-------|
 | Polygon Network | Medium | Trust validators for consensus |
-| Smart Contracts | Trustless | Code is law, verified on-chain |
+| Smart Contracts | Trustless | Code is law, verified on PolygonScan |
 | Delivery Proofs | Trustless | EIP-712 cryptographic signatures |
+| Reputation | Trustless | Computed from on-chain data |
 | Arbitrator | Trusted | Only for dispute resolution |
 
 ### Protections
 
 **For Buyers:**
 - ✅ Funds in escrow until delivery proven
-- ✅ Dispute window before release
+- ✅ Configurable dispute window before release
 - ✅ Seller bond slashing for misbehavior
 - ✅ Refund mechanism for failed deliveries
+- ✅ On-chain reputation visibility
 
 **For Sellers:**
-- ✅ Cryptographic delivery proofs
+- ✅ EIP-712 cryptographic delivery proofs
 - ✅ Automatic release after dispute window
 - ✅ Bond protects against false disputes
-- ✅ On-chain receipts as evidence
+- ✅ On-chain receipts as immutable evidence
+- ✅ Reputation score rewards good behavior
 
 ---
 
 ## 📊 Project Stats
 
-- **Lines of Solidity:** ~1,500
-- **Lines of TypeScript:** ~8,000
-- **Smart Contracts:** 4
+- **Smart Contracts:** 6 (Solidity 0.8.20)
+- **Lines of Solidity:** ~2,000
+- **Lines of TypeScript:** ~9,000
 - **Frontend Pages:** 8
+- **Custom Hooks:** 9
 - **React Components:** 30+
-- **Custom Hooks:** 10+
+- **Deployment Block:** 83,419,504
 
 ---
 
 ## 🛣️ Roadmap
 
-### Phase 1 ✅ (Current)
-- [x] Core smart contracts
-- [x] Frontend application
-- [x] Polygon mainnet deployment
-- [x] Basic marketplace
+### Wave 1-6 ✅ (Complete)
+- [x] Core smart contracts (EndpointRegistry, EscrowVault, SellerBondVault, ReceiptStore)
+- [x] ReputationEngine — on-chain reputation scoring with leaderboard
+- [x] PaymentRouter — batch payments and revenue splits
+- [x] Frontend application with 8 pages
+- [x] Polygon mainnet deployment (all 6 contracts)
+- [x] Multi-RPC fallback transport (no API keys)
+- [x] Category-based marketplace with filtering
+- [x] Full historical event explorer
+- [x] Buyer payment release flow
+- [x] Dynamic.xyz wallet integration
+- [x] Vercel production deployment
 
-### Phase 2 (Q2 2026)
-- [ ] SDK release
-- [ ] Multi-chain support
-- [ ] Advanced analytics
-- [ ] API templates
-
-### Phase 3 (Q3 2026)
+### Next Phases
+- [ ] SDK release (`@latchpay/sdk`)
+- [ ] Multi-chain support (Base, Arbitrum)
+- [ ] Advanced analytics dashboard
+- [ ] API endpoint templates
 - [ ] Decentralized arbitration
-- [ ] Subscription models
-- [ ] Rate limiting
-- [ ] CDN integration
+- [ ] Subscription payment models
+- [ ] Rate limiting integration
+- [ ] CDN & edge caching
 
 ---
 
@@ -540,11 +602,12 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 ## 🙏 Acknowledgments
 
-- [Polygon](https://polygon.technology/) - Scalable blockchain infrastructure
-- [Circle](https://circle.com/) - USDC stablecoin
-- [Dynamic](https://dynamic.xyz/) - Wallet authentication
-- [OpenZeppelin](https://openzeppelin.com/) - Smart contract libraries
-- [Viem](https://viem.sh/) - TypeScript Ethereum library
+- [Polygon](https://polygon.technology/) — Scalable blockchain infrastructure
+- [Circle](https://circle.com/) — USDC stablecoin
+- [Dynamic](https://dynamic.xyz/) — Wallet authentication
+- [OpenZeppelin](https://openzeppelin.com/) — Smart contract libraries
+- [Viem](https://viem.sh/) — TypeScript Ethereum library
+- [wagmi](https://wagmi.sh/) — React hooks for Ethereum
 
 ---
 
@@ -552,6 +615,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 **Built with 💜 for the decentralized web**
 
-[Website](https://latchpay.vercel.app) • [Twitter](https://twitter.com/latchpay) • [Discord](https://discord.gg/latchpay)
+[Website](https://latch-pay-r.vercel.app) • [GitHub](https://github.com/NOVA1358X/LatchPay)
 
 </div>
