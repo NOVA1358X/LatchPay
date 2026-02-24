@@ -4,8 +4,16 @@ import * as path from "path";
 import "dotenv/config";
 
 /**
- * LatchPay Deployment Script for Polygon Mainnet
+ * LatchPay Wave 6 Deployment Script for Polygon Mainnet
  * 
+ * Deploys 6 contracts:
+ * 1. EndpointRegistry
+ * 2. SellerBondVault
+ * 3. EscrowVault
+ * 4. ReceiptStore
+ * 5. ReputationEngine
+ * 6. PaymentRouter
+ *
  * SAFETY SWITCHES:
  * - MAINNET_DEPLOY=YES required
  * - CONFIRM_DEPLOY=YES required for actual broadcast
@@ -22,13 +30,15 @@ interface DeploymentAddresses {
   EscrowVault: string;
   SellerBondVault: string;
   ReceiptStore: string;
+  ReputationEngine: string;
+  PaymentRouter: string;
   deploymentBlock: number;
   deployedAt: string;
   deployer: string;
 }
 
 async function main() {
-  console.log("\n🔒 LatchPay Deployment Script");
+  console.log("\n🔒 LatchPay Wave 6 Deployment Script");
   console.log("=".repeat(50));
 
   // Safety Check 1: Environment Variables
@@ -69,6 +79,7 @@ async function main() {
   console.log(`   USDC Address: ${USDC_POLYGON}`);
   console.log(`   Protocol Fee: ${PROTOCOL_FEE_BPS / 100}%`);
   console.log(`   Fee Recipient: ${deployer.address}`);
+  console.log(`   Contracts: 6 (Registry, Escrow, BondVault, Receipts, Reputation, Router)`);
   console.log("-".repeat(50));
 
   // Final confirmation for mainnet
@@ -125,20 +136,61 @@ async function main() {
   const receiptStoreAddress = await receiptStore.getAddress();
   console.log(`   ✅ ReceiptStore deployed at: ${receiptStoreAddress}`);
 
+  // 5. Deploy ReputationEngine
+  console.log("5️⃣  Deploying ReputationEngine...");
+  const ReputationEngine = await ethers.getContractFactory("ReputationEngine");
+  const reputationEngine = await ReputationEngine.deploy();
+  await reputationEngine.waitForDeployment();
+  const reputationAddress = await reputationEngine.getAddress();
+  console.log(`   ✅ ReputationEngine deployed at: ${reputationAddress}`);
+
+  // 6. Deploy PaymentRouter
+  console.log("6️⃣  Deploying PaymentRouter...");
+  const PaymentRouter = await ethers.getContractFactory("PaymentRouter");
+  const paymentRouter = await PaymentRouter.deploy(USDC_POLYGON, escrowAddress);
+  await paymentRouter.waitForDeployment();
+  const routerAddress = await paymentRouter.getAddress();
+  console.log(`   ✅ PaymentRouter deployed at: ${routerAddress}`);
+
   // Wire up contracts
   console.log("\n🔗 Wiring up contracts...");
 
-  // Set BondVault on Registry
+  // EndpointRegistry: set BondVault + EscrowVault
   console.log("   Setting BondVault on Registry...");
-  await endpointRegistry.setBondVault(bondVaultAddress);
+  const tx1 = await endpointRegistry.setBondVault(bondVaultAddress);
+  await tx1.wait();
 
-  // Set EscrowVault on BondVault
+  console.log("   Setting EscrowVault on Registry...");
+  const tx2 = await endpointRegistry.setEscrowVault(escrowAddress);
+  await tx2.wait();
+
+  // SellerBondVault: set EscrowVault
   console.log("   Setting EscrowVault on BondVault...");
-  await sellerBondVault.setEscrowVault(escrowAddress);
+  const tx3 = await sellerBondVault.setEscrowVault(escrowAddress);
+  await tx3.wait();
 
-  // Set EscrowVault on ReceiptStore
+  // ReceiptStore: set EscrowVault
   console.log("   Setting EscrowVault on ReceiptStore...");
-  await receiptStore.setEscrowVault(escrowAddress);
+  const tx4 = await receiptStore.setEscrowVault(escrowAddress);
+  await tx4.wait();
+
+  // EscrowVault: set BondVault, ReceiptStore, ReputationEngine
+  console.log("   Setting BondVault on EscrowVault...");
+  const tx5 = await escrowVault.setBondVault(bondVaultAddress);
+  await tx5.wait();
+
+  console.log("   Setting ReceiptStore on EscrowVault...");
+  const tx6 = await escrowVault.setReceiptStore(receiptStoreAddress);
+  await tx6.wait();
+
+  console.log("   Setting ReputationEngine on EscrowVault...");
+  const tx7 = await escrowVault.setReputationEngine(reputationAddress);
+  await tx7.wait();
+
+  // ReputationEngine: set EscrowVault
+  console.log("   Setting EscrowVault on ReputationEngine...");
+  const tx8 = await reputationEngine.setEscrowVault(escrowAddress);
+  await tx8.wait();
 
   console.log("   ✅ All contracts wired successfully");
 
@@ -153,6 +205,8 @@ async function main() {
     EscrowVault: escrowAddress,
     SellerBondVault: bondVaultAddress,
     ReceiptStore: receiptStoreAddress,
+    ReputationEngine: reputationAddress,
+    PaymentRouter: routerAddress,
     deploymentBlock: currentBlock,
     deployedAt: new Date().toISOString(),
     deployer: deployer.address,
@@ -185,12 +239,14 @@ async function main() {
   console.log("🎉 DEPLOYMENT COMPLETE!");
   console.log("=".repeat(50));
   console.log("\n📋 Contract Addresses:");
-  console.log(`   EndpointRegistry:  ${registryAddress}`);
-  console.log(`   EscrowVault:       ${escrowAddress}`);
-  console.log(`   SellerBondVault:   ${bondVaultAddress}`);
-  console.log(`   ReceiptStore:      ${receiptStoreAddress}`);
-  console.log(`\n📦 Deployment Block:  ${currentBlock}`);
-  console.log(`⏰ Deployed At:       ${addresses.deployedAt}`);
+  console.log(`   EndpointRegistry:   ${registryAddress}`);
+  console.log(`   EscrowVault:        ${escrowAddress}`);
+  console.log(`   SellerBondVault:    ${bondVaultAddress}`);
+  console.log(`   ReceiptStore:       ${receiptStoreAddress}`);
+  console.log(`   ReputationEngine:   ${reputationAddress}`);
+  console.log(`   PaymentRouter:      ${routerAddress}`);
+  console.log(`\n📦 Deployment Block:   ${currentBlock}`);
+  console.log(`⏰ Deployed At:        ${addresses.deployedAt}`);
 
   if (MAINNET_DEPLOY === "YES") {
     console.log("\n🔍 Verify contracts on Polygonscan:");
@@ -198,6 +254,8 @@ async function main() {
     console.log(`   npx hardhat verify --network polygon ${bondVaultAddress} "${USDC_POLYGON}"`);
     console.log(`   npx hardhat verify --network polygon ${escrowAddress} "${USDC_POLYGON}" "${registryAddress}" "${PROTOCOL_FEE_BPS}" "${deployer.address}"`);
     console.log(`   npx hardhat verify --network polygon ${receiptStoreAddress}`);
+    console.log(`   npx hardhat verify --network polygon ${reputationAddress}`);
+    console.log(`   npx hardhat verify --network polygon ${routerAddress} "${USDC_POLYGON}" "${escrowAddress}"`);
   }
 
   console.log("\n");

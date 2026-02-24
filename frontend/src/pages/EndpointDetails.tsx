@@ -13,8 +13,13 @@ import {
   Check,
   AlertCircle,
   Play,
+  Star,
+  Loader2,
 } from 'lucide-react';
 import { Button, Modal } from '../components/common';
+import { useEndpoints } from '../hooks/useEndpoints';
+import { useEscrow } from '../hooks/useEscrow';
+import { useSellerReputation } from '../hooks/useReputation';
 import featuredEndpointsData from '../data/featured-endpoints.json';
 import categoriesData from '../data/categories.json';
 
@@ -23,12 +28,55 @@ export default function EndpointDetails() {
   const { primaryWallet } = useDynamicContext();
   const [showPayModal, setShowPayModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // Find endpoint from static data (would merge with onchain in production)
-  const endpoint = useMemo(() => {
+  // Fetch on-chain endpoints
+  const { endpoints: onchainEndpoints } = useEndpoints();
+  const { openPayment, isLoading: isProcessing } = useEscrow();
+
+  // Find on-chain endpoint first, fallback to static data
+  const onchainEndpoint = useMemo(() => {
+    return onchainEndpoints.find((e) => e.endpointId === endpointId);
+  }, [onchainEndpoints, endpointId]);
+
+  const staticEndpoint = useMemo(() => {
     return featuredEndpointsData.find((e) => e.id === endpointId);
   }, [endpointId]);
+
+  // Merged endpoint view
+  const endpoint = useMemo(() => {
+    if (onchainEndpoint) {
+      return {
+        id: onchainEndpoint.endpointId,
+        name: onchainEndpoint.metadataURI || `Endpoint ${onchainEndpoint.endpointId.slice(0, 10)}...`,
+        description: staticEndpoint?.description || 'On-chain API endpoint',
+        category: onchainEndpoint.category || staticEndpoint?.category || 'compute',
+        pricePerCall: (Number(onchainEndpoint.pricePerCall) / 1e6).toFixed(6),
+        seller: onchainEndpoint.seller,
+        tags: staticEndpoint?.tags || [],
+        featured: staticEndpoint?.featured || false,
+        apiEndpoint: staticEndpoint?.apiEndpoint || `/api/paid/${onchainEndpoint.endpointId.slice(0, 8)}`,
+        totalCalls: onchainEndpoint.totalCalls.toString(),
+        disputeWindowHours: Number(onchainEndpoint.disputeWindowSeconds) / 3600,
+        active: onchainEndpoint.active,
+        isOnchain: true,
+      };
+    }
+    if (staticEndpoint) {
+      return {
+        ...staticEndpoint,
+        totalCalls: '--',
+        disputeWindowHours: 24,
+        active: true,
+        isOnchain: false,
+      };
+    }
+    return null;
+  }, [onchainEndpoint, staticEndpoint]);
+
+  // Seller reputation
+  const { reputation: sellerRep } = useSellerReputation(endpoint?.seller);
 
   const category = useMemo(() => {
     return categoriesData.find((c) => c.id === endpoint?.category);
@@ -59,22 +107,23 @@ export default function EndpointDetails() {
       return;
     }
 
-    setIsProcessing(true);
-    
-    // In production, this would:
-    // 1. Approve USDC spending
-    // 2. Call openPayment on EscrowVault
-    // 3. Call the API endpoint with the paymentId
-    
+    setPaymentError(null);
+    setPaymentSuccess(null);
+
     try {
-      // Simulate payment for now
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      alert('Payment simulation complete! In production, this would create an onchain escrow.');
-    } catch (error) {
+      const result = await openPayment(
+        endpointId as `0x${string}`,
+        endpoint.pricePerCall,
+        `pay-${endpointId}-${Date.now()}`
+      );
+      setPaymentSuccess(`Payment opened! TX: ${result.hash.slice(0, 14)}...`);
+      setTimeout(() => {
+        setShowPayModal(false);
+        setPaymentSuccess(null);
+      }, 3000);
+    } catch (error: any) {
       console.error('Payment error:', error);
-    } finally {
-      setIsProcessing(false);
-      setShowPayModal(false);
+      setPaymentError(error?.shortMessage || error?.message || 'Payment failed');
     }
   };
 
@@ -283,7 +332,7 @@ const { data, deliveryProof } = await response.json();`}
                     <span>Total Calls</span>
                   </div>
                   <span className="font-semibold text-surface-900 dark:text-white">
-                    --
+                    {endpoint.totalCalls}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -292,18 +341,29 @@ const { data, deliveryProof } = await response.json();`}
                     <span>Dispute Window</span>
                   </div>
                   <span className="font-semibold text-surface-900 dark:text-white">
-                    24 hours
+                    {endpoint.disputeWindowHours} hours
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
                     <Shield className="w-4 h-4" />
-                    <span>Required Bond</span>
+                    <span>Seller Reputation</span>
                   </div>
                   <span className="font-semibold text-surface-900 dark:text-white">
-                    None
+                    {sellerRep ? `${(sellerRep.reputationScore / 100).toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
+                {endpoint.isOnchain && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-surface-600 dark:text-surface-400">
+                      <Star className="w-4 h-4" />
+                      <span>Status</span>
+                    </div>
+                    <span className={`font-semibold ${endpoint.active ? 'text-green-500' : 'text-red-500'}`}>
+                      {endpoint.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -369,6 +429,19 @@ const { data, deliveryProof } = await response.json();`}
         size="md"
       >
         <div className="space-y-6">
+          {paymentSuccess && (
+            <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <span className="text-green-700 dark:text-green-300">{paymentSuccess}</span>
+            </div>
+          )}
+
+          {paymentError && (
+            <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-xl text-red-700 dark:text-red-300">
+              {paymentError}
+            </div>
+          )}
+
           <div className="p-4 bg-surface-50 dark:bg-surface-800 rounded-xl">
             <div className="flex items-center justify-between mb-3">
               <span className="text-surface-600 dark:text-surface-400">API</span>
@@ -409,8 +482,14 @@ const { data, deliveryProof } = await response.json();`}
               className="flex-1"
               onClick={handlePayment}
               loading={isProcessing}
+              disabled={!!paymentSuccess}
             >
-              {isProcessing ? 'Processing...' : 'Confirm Payment'}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Opening Escrow...
+                </>
+              ) : paymentSuccess ? 'Payment Opened!' : 'Confirm Payment'}
             </Button>
           </div>
         </div>

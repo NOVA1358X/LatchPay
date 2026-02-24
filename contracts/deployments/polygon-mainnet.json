@@ -1,11 +1,13 @@
 {
   "chainId": 137,
   "usdc": "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
-  "EndpointRegistry": "0xB949Eb2167CD7669e688B292924829364698d158",
-  "EscrowVault": "0xE15194bac21572E14dAEf4e1f3762083957375F4",
-  "SellerBondVault": "0xf00035923C1A85E146de312E55ABe9270F7Bb702",
-  "ReceiptStore": "0xb11e66d9a63DC8206DAaFD7037c6730a09A360C7",
-  "deploymentBlock": 82403645,
-  "deployedAt": "2026-02-01T06:28:18.070Z",
-  "deployer": "0xd462cc45b06Ae45daCd93F7B3979758C7b4a2cc0"
+  "EndpointRegistry": "0xe6B482BD271E02BD4CF9c58a895ac1e721aBdf04",
+  "EscrowVault": "0xadb05512B6a2FD89Dfc01bC6f2276f0ceCCEAfB5",
+  "SellerBondVault": "0x648F2A0d86B998a76FaD2e454D9909CDd37f5A8e",
+  "ReceiptStore": "0xCF314A60a395e0bfd1E09108d6bA1cdB17D8Bf16",
+  "ReputationEngine": "0xa5b5FC4F47aacDaf86404754CE15EB48a4dEdCe6",
+  "PaymentRouter": "0x6b0f731bBF78D2FF9538F0B44e7589B62C209964",
+  "deploymentBlock": 83419504,
+  "deployedAt": "2026-02-24T18:50:37.017Z",
+  "deployer": "0xd8518e143f594D05f8e0e4401dfF7a2387aA2b1d"
 }

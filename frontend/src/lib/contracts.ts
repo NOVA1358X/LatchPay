@@ -373,44 +373,251 @@ export const USDCABI = [
   },
 ] as const;
 
-// ReceiptStore ABI
+// ReceiptStore ABI - matches actual contract Receipt struct
 export const ReceiptStoreABI = [
   {
     type: 'function',
     name: 'getReceipt',
     inputs: [{ name: 'paymentId', type: 'bytes32' }],
     outputs: [
-      { name: 'requestHash', type: 'bytes32' },
-      { name: 'responseHash', type: 'bytes32' },
-      { name: 'storedAt', type: 'uint256' },
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'paymentId', type: 'bytes32' },
+          { name: 'endpointId', type: 'bytes32' },
+          { name: 'buyer', type: 'address' },
+          { name: 'seller', type: 'address' },
+          { name: 'deliveryHash', type: 'bytes32' },
+          { name: 'responseMetaHash', type: 'bytes32' },
+          { name: 'timestamp', type: 'uint256' },
+          { name: 'amount', type: 'uint256' },
+        ],
+      },
     ],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    name: 'hasReceipt',
+    name: 'receiptExists',
     inputs: [{ name: 'paymentId', type: 'bytes32' }],
     outputs: [{ name: '', type: 'bool' }],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    name: 'storeReceipt',
-    inputs: [
-      { name: 'paymentId', type: 'bytes32' },
-      { name: 'requestHash', type: 'bytes32' },
-      { name: 'responseHash', type: 'bytes32' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
+    name: 'getAllReceiptIds',
+    inputs: [],
+    outputs: [{ name: '', type: 'bytes32[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getReceiptCount',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
   },
   {
     type: 'event',
     name: 'ReceiptStored',
     inputs: [
       { name: 'paymentId', type: 'bytes32', indexed: true },
-      { name: 'requestHash', type: 'bytes32', indexed: false },
-      { name: 'responseHash', type: 'bytes32', indexed: false },
+      { name: 'endpointId', type: 'bytes32', indexed: true },
+      { name: 'buyer', type: 'address', indexed: true },
+      { name: 'seller', type: 'address', indexed: false },
+      { name: 'deliveryHash', type: 'bytes32', indexed: false },
+      { name: 'responseMetaHash', type: 'bytes32', indexed: false },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;
+
+// ReputationEngine ABI
+export const ReputationEngineABI = [
+  {
+    type: 'function',
+    name: 'getSellerReputationScore',
+    inputs: [{ name: 'seller', type: 'address' }],
+    outputs: [{ name: 'score', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getBuyerReputationScore',
+    inputs: [{ name: 'buyer', type: 'address' }],
+    outputs: [{ name: 'score', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getSellerScore',
+    inputs: [{ name: 'seller', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'totalDeliveries', type: 'uint256' },
+          { name: 'successfulDeliveries', type: 'uint256' },
+          { name: 'totalDisputes', type: 'uint256' },
+          { name: 'disputesLost', type: 'uint256' },
+          { name: 'totalRefunds', type: 'uint256' },
+          { name: 'totalVolumeUSD6', type: 'uint256' },
+          { name: 'lastActivityAt', type: 'uint256' },
+          { name: 'registeredAt', type: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getBuyerScore',
+    inputs: [{ name: 'buyer', type: 'address' }],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'totalPayments', type: 'uint256' },
+          { name: 'totalDisputes', type: 'uint256' },
+          { name: 'disputesWon', type: 'uint256' },
+          { name: 'totalSpentUSD6', type: 'uint256' },
+          { name: 'lastActivityAt', type: 'uint256' },
+          { name: 'registeredAt', type: 'uint256' },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getTopSellers',
+    inputs: [],
+    outputs: [{ name: '', type: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getLeaderboardLength',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'DeliveryRecorded',
+    inputs: [
+      { name: 'paymentId', type: 'bytes32', indexed: true },
+      { name: 'seller', type: 'address', indexed: true },
+      { name: 'buyer', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'DisputeRecorded',
+    inputs: [
+      { name: 'paymentId', type: 'bytes32', indexed: true },
+      { name: 'seller', type: 'address', indexed: true },
+      { name: 'buyer', type: 'address', indexed: true },
+      { name: 'buyerWon', type: 'bool', indexed: false },
+    ],
+  },
+] as const;
+
+// PaymentRouter ABI
+export const PaymentRouterABI = [
+  {
+    type: 'function',
+    name: 'batchOpenPayments',
+    inputs: [
+      { name: 'endpointIds', type: 'bytes32[]' },
+      { name: 'maxPrices', type: 'uint256[]' },
+      { name: 'buyerNoteHashes', type: 'bytes32[]' },
+    ],
+    outputs: [
+      {
+        name: 'results',
+        type: 'tuple[]',
+        components: [
+          { name: 'paymentId', type: 'bytes32' },
+          { name: 'success', type: 'bool' },
+        ],
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'routeAndPay',
+    inputs: [
+      { name: 'endpointId', type: 'bytes32' },
+      { name: 'maxPrice', type: 'uint256' },
+      { name: 'buyerNoteHash', type: 'bytes32' },
+    ],
+    outputs: [{ name: 'paymentId', type: 'bytes32' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setRevenueSplit',
+    inputs: [
+      { name: 'recipients', type: 'address[]' },
+      { name: 'sharesBps', type: 'uint256[]' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'removeRevenueSplit',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getRevenueSplit',
+    inputs: [{ name: 'seller', type: 'address' }],
+    outputs: [
+      { name: 'recipients', type: 'address[]' },
+      { name: 'sharesBps', type: 'uint256[]' },
+      { name: 'active', type: 'bool' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getSplitBalance',
+    inputs: [{ name: 'recipient', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'withdrawSplitBalance',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'event',
+    name: 'BatchPaymentExecuted',
+    inputs: [
+      { name: 'buyer', type: 'address', indexed: true },
+      { name: 'totalPayments', type: 'uint256', indexed: false },
+      { name: 'successCount', type: 'uint256', indexed: false },
+      { name: 'totalAmount', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'RevenueSplitConfigured',
+    inputs: [
+      { name: 'seller', type: 'address', indexed: true },
+      { name: 'recipients', type: 'address[]', indexed: false },
+      { name: 'sharesBps', type: 'uint256[]', indexed: false },
     ],
   },
 ] as const;
@@ -420,6 +627,8 @@ export const ENDPOINT_REGISTRY_ABI = EndpointRegistryABI;
 export const ESCROW_ABI = EscrowVaultABI;
 export const BOND_VAULT_ABI = SellerBondVaultABI;
 export const RECEIPT_STORE_ABI = ReceiptStoreABI;
+export const REPUTATION_ENGINE_ABI = ReputationEngineABI;
+export const PAYMENT_ROUTER_ABI = PaymentRouterABI;
 export const ERC20_ABI = USDCABI;
 
 // Contract addresses

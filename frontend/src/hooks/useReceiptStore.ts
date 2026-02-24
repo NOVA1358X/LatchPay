@@ -2,43 +2,17 @@ import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { publicClient } from '../lib/viem';
 import { addresses } from '../config/constants';
-
-// ReceiptStore ABI
-const RECEIPT_STORE_ABI = [
-  {
-    type: 'function',
-    name: 'getReceipt',
-    inputs: [{ name: 'paymentId', type: 'bytes32' }],
-    outputs: [
-      { name: 'requestHash', type: 'bytes32' },
-      { name: 'responseHash', type: 'bytes32' },
-      { name: 'storedAt', type: 'uint256' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'hasReceipt',
-    inputs: [{ name: 'paymentId', type: 'bytes32' }],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'event',
-    name: 'ReceiptStored',
-    inputs: [
-      { name: 'paymentId', type: 'bytes32', indexed: true },
-      { name: 'requestHash', type: 'bytes32', indexed: false },
-      { name: 'responseHash', type: 'bytes32', indexed: false },
-    ],
-  },
-] as const;
+import { ReceiptStoreABI } from '../lib/contracts';
 
 export interface Receipt {
   paymentId: string;
-  requestHash: string;
-  responseHash: string;
-  storedAt: number;
+  endpointId: string;
+  buyer: string;
+  seller: string;
+  deliveryHash: string;
+  responseMetaHash: string;
+  timestamp: number;
+  amount: bigint;
 }
 
 export function useReceipt(paymentId: string | undefined) {
@@ -54,28 +28,32 @@ export function useReceipt(paymentId: string | undefined) {
 
       try {
         // Check if receipt exists
-        const hasReceipt = await publicClient.readContract({
+        const exists = await publicClient.readContract({
           address: receiptStoreAddress,
-          abi: RECEIPT_STORE_ABI,
-          functionName: 'hasReceipt',
+          abi: ReceiptStoreABI,
+          functionName: 'receiptExists',
           args: [paymentId as `0x${string}`],
         });
 
-        if (!hasReceipt) return null;
+        if (!exists) return null;
 
-        // Get receipt data
-        const [requestHash, responseHash, storedAt] = await publicClient.readContract({
+        // Get receipt data - returns full Receipt struct
+        const data = await publicClient.readContract({
           address: receiptStoreAddress,
-          abi: RECEIPT_STORE_ABI,
+          abi: ReceiptStoreABI,
           functionName: 'getReceipt',
           args: [paymentId as `0x${string}`],
-        });
+        }) as any;
 
         return {
-          paymentId,
-          requestHash,
-          responseHash,
-          storedAt: Number(storedAt),
+          paymentId: data.paymentId,
+          endpointId: data.endpointId,
+          buyer: data.buyer,
+          seller: data.seller,
+          deliveryHash: data.deliveryHash,
+          responseMetaHash: data.responseMetaHash,
+          timestamp: Number(data.timestamp),
+          amount: data.amount,
         };
       } catch (err) {
         console.error('Failed to fetch receipt:', err);
@@ -96,8 +74,8 @@ export function useReceipt(paymentId: string | undefined) {
 export function useVerifyDelivery() {
   const verifyDelivery = useCallback(async (
     paymentId: string,
-    expectedRequestHash: string,
-    expectedResponseHash: string
+    expectedDeliveryHash: string,
+    expectedResponseMetaHash: string
   ): Promise<{ valid: boolean; receipt: Receipt | null }> => {
     const receiptStoreAddress = addresses.ReceiptStore;
     if (!receiptStoreAddress || receiptStoreAddress === '0x0000000000000000000000000000000000000000') {
@@ -105,35 +83,39 @@ export function useVerifyDelivery() {
     }
 
     try {
-      const hasReceipt = await publicClient.readContract({
+      const exists = await publicClient.readContract({
         address: receiptStoreAddress,
-        abi: RECEIPT_STORE_ABI,
-        functionName: 'hasReceipt',
+        abi: ReceiptStoreABI,
+        functionName: 'receiptExists',
         args: [paymentId as `0x${string}`],
       });
 
-      if (!hasReceipt) {
+      if (!exists) {
         return { valid: false, receipt: null };
       }
 
-      const [requestHash, responseHash, storedAt] = await publicClient.readContract({
+      const data = await publicClient.readContract({
         address: receiptStoreAddress,
-        abi: RECEIPT_STORE_ABI,
+        abi: ReceiptStoreABI,
         functionName: 'getReceipt',
         args: [paymentId as `0x${string}`],
-      });
+      }) as any;
 
       const receipt: Receipt = {
-        paymentId,
-        requestHash,
-        responseHash,
-        storedAt: Number(storedAt),
+        paymentId: data.paymentId,
+        endpointId: data.endpointId,
+        buyer: data.buyer,
+        seller: data.seller,
+        deliveryHash: data.deliveryHash,
+        responseMetaHash: data.responseMetaHash,
+        timestamp: Number(data.timestamp),
+        amount: data.amount,
       };
 
       // Verify hashes match
       const valid = 
-        requestHash.toLowerCase() === expectedRequestHash.toLowerCase() &&
-        responseHash.toLowerCase() === expectedResponseHash.toLowerCase();
+        data.deliveryHash.toLowerCase() === expectedDeliveryHash.toLowerCase() &&
+        data.responseMetaHash.toLowerCase() === expectedResponseMetaHash.toLowerCase();
 
       return { valid, receipt };
     } catch (err) {

@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./EndpointRegistry.sol";
+import "./SellerBondVault.sol";
+import "./ReceiptStore.sol";
 
 /**
  * @title EscrowVault
@@ -68,6 +70,15 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
 
     /// @notice Endpoint registry contract
     EndpointRegistry public immutable registry;
+
+    /// @notice SellerBondVault contract
+    SellerBondVault public bondVault;
+
+    /// @notice ReceiptStore contract
+    ReceiptStore public receiptStore;
+
+    /// @notice ReputationEngine contract (interface)
+    address public reputationEngine;
 
     /// @notice Protocol fee in basis points
     uint256 public protocolFeeBps;
@@ -143,6 +154,9 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
     event ProtocolFeeUpdated(uint256 newFeeBps);
     event FeeRecipientUpdated(address indexed newRecipient);
     event DeliveryDeadlineUpdated(uint256 newDeadline);
+    event BondVaultUpdated(address indexed newBondVault);
+    event ReceiptStoreUpdated(address indexed newReceiptStore);
+    event ReputationEngineUpdated(address indexed newReputationEngine);
 
     // ============ Errors ============
 
@@ -246,6 +260,11 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
         // Transfer USDC to escrow
         usdc.safeTransferFrom(msg.sender, address(this), amount);
 
+        // Increment active payments on bond vault
+        if (address(bondVault) != address(0)) {
+            bondVault.incrementActivePayments(endpoint.seller);
+        }
+
         emit PaymentOpened(
             paymentId,
             endpointId,
@@ -304,6 +323,32 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
         // Increment endpoint call count
         registry.incrementCalls(payment.endpointId);
 
+        // Store receipt on-chain
+        if (address(receiptStore) != address(0)) {
+            receiptStore.storeReceipt(
+                paymentId,
+                payment.endpointId,
+                payment.buyer,
+                payment.seller,
+                deliveryHash,
+                responseMetaHash,
+                payment.amount
+            );
+        }
+
+        // Record successful delivery in reputation engine
+        if (reputationEngine != address(0)) {
+            (bool success, ) = reputationEngine.call(
+                abi.encodeWithSignature(
+                    "recordDelivery(bytes32,address,address)",
+                    paymentId,
+                    payment.seller,
+                    payment.buyer
+                )
+            );
+            // Don't revert if reputation call fails
+        }
+
         emit Delivered(paymentId, deliveryHash, responseMetaHash, block.timestamp);
     }
 
@@ -342,6 +387,11 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
         payment.status = PaymentStatus.Released;
         accumulatedFees += fee;
 
+        // Decrement active payments on bond vault
+        if (address(bondVault) != address(0)) {
+            bondVault.decrementActivePayments(payment.seller);
+        }
+
         // Transfer to seller
         usdc.safeTransfer(payment.seller, sellerAmount);
 
@@ -361,6 +411,23 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
         }
 
         payment.status = PaymentStatus.Refunded;
+
+        // Decrement active payments on bond vault
+        if (address(bondVault) != address(0)) {
+            bondVault.decrementActivePayments(payment.seller);
+        }
+
+        // Record refund in reputation engine
+        if (reputationEngine != address(0)) {
+            (bool success, ) = reputationEngine.call(
+                abi.encodeWithSignature(
+                    "recordRefund(bytes32,address,address)",
+                    paymentId,
+                    payment.seller,
+                    payment.buyer
+                )
+            );
+        }
 
         // Transfer back to buyer
         usdc.safeTransfer(payment.buyer, payment.amount);
@@ -382,6 +449,26 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
         if (buyerWins) {
             payment.status = PaymentStatus.Refunded;
             usdc.safeTransfer(payment.buyer, payment.amount);
+
+            // Slash seller bond on lost dispute
+            if (address(bondVault) != address(0)) {
+                bondVault.slash(payment.seller, paymentId, 1000, "Lost dispute"); // 10% slash
+                bondVault.decrementActivePayments(payment.seller);
+            }
+
+            // Record dispute loss in reputation
+            if (reputationEngine != address(0)) {
+                (bool success, ) = reputationEngine.call(
+                    abi.encodeWithSignature(
+                        "recordDispute(bytes32,address,address,bool)",
+                        paymentId,
+                        payment.seller,
+                        payment.buyer,
+                        true
+                    )
+                );
+            }
+
             emit DisputeResolved(paymentId, true, payment.amount);
         } else {
             uint256 fee = (payment.amount * protocolFeeBps) / BPS_DENOMINATOR;
@@ -390,6 +477,25 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
             payment.status = PaymentStatus.Released;
             accumulatedFees += fee;
             usdc.safeTransfer(payment.seller, sellerAmount);
+
+            // Decrement active payments
+            if (address(bondVault) != address(0)) {
+                bondVault.decrementActivePayments(payment.seller);
+            }
+
+            // Record dispute win for seller in reputation
+            if (reputationEngine != address(0)) {
+                (bool success, ) = reputationEngine.call(
+                    abi.encodeWithSignature(
+                        "recordDispute(bytes32,address,address,bool)",
+                        paymentId,
+                        payment.seller,
+                        payment.buyer,
+                        false
+                    )
+                );
+            }
+
             emit DisputeResolved(paymentId, false, sellerAmount);
         }
     }
@@ -436,6 +542,36 @@ contract EscrowVault is Ownable, ReentrancyGuard, EIP712 {
     function setDeliveryDeadline(uint256 newDeadline) external onlyOwner {
         deliveryDeadline = newDeadline;
         emit DeliveryDeadlineUpdated(newDeadline);
+    }
+
+    /**
+     * @notice Set the bond vault contract
+     * @param _bondVault Address of the SellerBondVault
+     */
+    function setBondVault(address _bondVault) external onlyOwner {
+        if (_bondVault == address(0)) revert ZeroAddress();
+        bondVault = SellerBondVault(_bondVault);
+        emit BondVaultUpdated(_bondVault);
+    }
+
+    /**
+     * @notice Set the receipt store contract
+     * @param _receiptStore Address of the ReceiptStore
+     */
+    function setReceiptStore(address _receiptStore) external onlyOwner {
+        if (_receiptStore == address(0)) revert ZeroAddress();
+        receiptStore = ReceiptStore(_receiptStore);
+        emit ReceiptStoreUpdated(_receiptStore);
+    }
+
+    /**
+     * @notice Set the reputation engine contract
+     * @param _reputationEngine Address of the ReputationEngine
+     */
+    function setReputationEngine(address _reputationEngine) external onlyOwner {
+        if (_reputationEngine == address(0)) revert ZeroAddress();
+        reputationEngine = _reputationEngine;
+        emit ReputationEngineUpdated(_reputationEngine);
     }
 
     // ============ View Functions ============

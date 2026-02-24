@@ -6,7 +6,6 @@ import {
   Plus,
   Store,
   DollarSign,
-  TrendingUp,
   Shield,
   ExternalLink,
   Zap,
@@ -15,11 +14,14 @@ import {
   EyeOff,
   Loader2,
   CheckCircle,
+  Star,
 } from 'lucide-react';
 import { Button, Modal, CardSkeleton } from '../components/common';
 import { useSellerEndpoints, useRegisterEndpoint } from '../hooks/useEndpoints';
 import { useSellerPayments } from '../hooks/usePayments';
 import { useSellerBond, useBondActions } from '../hooks/useBondVault';
+import { useSellerActions } from '../hooks/useSellerActions';
+import { useSellerReputation } from '../hooks/useReputation';
 
 export default function SellerDashboard() {
   const { primaryWallet } = useDynamicContext();
@@ -28,11 +30,17 @@ export default function SellerDashboard() {
   const { bondInfo, isLoading: bondLoading, refetch: refetchBond } = useSellerBond(primaryWallet?.address);
   const { depositBond, withdrawBond, isLoading: bondActionLoading } = useBondActions();
   const { registerEndpoint, isLoading: isRegistering } = useRegisterEndpoint();
+  const { updateEndpoint, deactivateEndpoint, isLoading: sellerActionLoading } = useSellerActions();
+  const { reputation: sellerRep } = useSellerReputation(primaryWallet?.address);
   
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showBondModal, setShowBondModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editEndpointId, setEditEndpointId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ metadataURI: '', pricePerCall: '' });
   const [bondAmount, setBondAmount] = useState('');
   const [activeTab, setActiveTab] = useState<'endpoints' | 'earnings' | 'bond'>('endpoints');
+  const [actionMsg, setActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // Registration form state
   const [regForm, setRegForm] = useState({
@@ -167,7 +175,7 @@ export default function SellerDashboard() {
           {[
             { label: 'Total Endpoints', value: endpoints.length, icon: Store },
             { label: 'Total Earnings', value: `$${totalEarnings.toFixed(2)}`, icon: DollarSign },
-            { label: 'Pending', value: `$${pendingEarnings.toFixed(2)}`, icon: TrendingUp },
+            { label: 'Reputation', value: sellerRep ? `${(sellerRep.reputationScore / 100).toFixed(1)}%` : 'N/A', icon: Star },
             { label: 'Bond Deposited', value: bondLoading ? '...' : `$${bondBalance.toFixed(2)}`, icon: Shield },
           ].map((stat) => {
             const Icon = stat.icon;
@@ -277,13 +285,38 @@ export default function SellerDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-4 border-t border-surface-200 dark:border-surface-800">
-                      <Button variant="ghost" size="sm" icon={Edit}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={Edit}
+                        disabled={sellerActionLoading}
+                        onClick={() => {
+                          setEditEndpointId(endpoint.endpointId);
+                          setEditForm({
+                            metadataURI: endpoint.metadataURI || '',
+                            pricePerCall: (Number(endpoint.pricePerCall) / 1e6).toString(),
+                          });
+                          setShowEditModal(true);
+                        }}
+                      >
                         Edit
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        icon={endpoint.active ? EyeOff : Eye}
+                        icon={sellerActionLoading ? Loader2 : (endpoint.active ? EyeOff : Eye)}
+                        disabled={sellerActionLoading}
+                        onClick={async () => {
+                          try {
+                            await deactivateEndpoint(endpoint.endpointId as `0x${string}`);
+                            setActionMsg({ type: 'success', text: `Endpoint ${endpoint.active ? 'deactivated' : 'updated'}` });
+                            refetchEndpoints();
+                            setTimeout(() => setActionMsg(null), 3000);
+                          } catch (err: any) {
+                            setActionMsg({ type: 'error', text: err?.shortMessage || err?.message || 'Failed' });
+                            setTimeout(() => setActionMsg(null), 5000);
+                          }
+                        }}
                       >
                         {endpoint.active ? 'Deactivate' : 'Activate'}
                       </Button>
@@ -552,6 +585,84 @@ export default function SellerDashboard() {
           </div>
         </div>
       </Modal>
+
+      {/* Edit Endpoint Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Endpoint"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-surface-900 dark:text-white mb-2">
+              Metadata URI
+            </label>
+            <input
+              type="text"
+              className="input"
+              placeholder="ipfs://... or https://..."
+              value={editForm.metadataURI}
+              onChange={(e) => setEditForm({ ...editForm, metadataURI: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-surface-900 dark:text-white mb-2">
+              Price per Call (USDC)
+            </label>
+            <input
+              type="number"
+              step="0.000001"
+              className="input"
+              value={editForm.pricePerCall}
+              onChange={(e) => setEditForm({ ...editForm, pricePerCall: e.target.value })}
+            />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={sellerActionLoading}
+              onClick={async () => {
+                if (!editEndpointId) return;
+                try {
+                  await updateEndpoint(editEndpointId as `0x${string}`, {
+                    metadataURI: editForm.metadataURI,
+                    pricePerCall: editForm.pricePerCall,
+                  });
+                  setActionMsg({ type: 'success', text: 'Endpoint updated!' });
+                  setShowEditModal(false);
+                  refetchEndpoints();
+                  setTimeout(() => setActionMsg(null), 3000);
+                } catch (err: any) {
+                  setActionMsg({ type: 'error', text: err?.shortMessage || err?.message || 'Update failed' });
+                  setTimeout(() => setActionMsg(null), 5000);
+                }
+              }}
+            >
+              {sellerActionLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Updating...
+                </>
+              ) : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Action notification toast */}
+      {actionMsg && (
+        <div className={`fixed bottom-6 right-6 p-4 rounded-xl shadow-lg z-50 ${
+          actionMsg.type === 'success'
+            ? 'bg-green-100 dark:bg-green-900/80 text-green-700 dark:text-green-300'
+            : 'bg-red-100 dark:bg-red-900/80 text-red-700 dark:text-red-300'
+        }`}>
+          {actionMsg.text}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,9 +9,12 @@ import {
   CheckCircle2,
   ExternalLink,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
-import { Button, CardSkeleton } from '../components/common';
+import { Button, CardSkeleton, Modal } from '../components/common';
 import { useBuyerPayments } from '../hooks/usePayments';
+import { useEscrow } from '../hooks/useEscrow';
+import { useBuyerReputation } from '../hooks/useReputation';
 
 const statusConfig = {
   0: { label: 'Pending', icon: Clock, color: 'yellow' },
@@ -24,7 +27,42 @@ const statusConfig = {
 export default function BuyerDashboard() {
   const { primaryWallet } = useDynamicContext();
   const { payments, isLoading, refetch } = useBuyerPayments(primaryWallet?.address);
+  const { disputePayment, refundPayment, isLoading: actionLoading } = useEscrow();
+  // Buyer reputation available for future UI expansion
+  useBuyerReputation(primaryWallet?.address);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const handleDispute = async () => {
+    if (!selectedPaymentId || !disputeReason.trim()) return;
+    setActionError(null);
+    try {
+      await disputePayment(selectedPaymentId as `0x${string}`, disputeReason);
+      setActionSuccess('Dispute submitted successfully!');
+      setShowDisputeModal(false);
+      setDisputeReason('');
+      refetch();
+      setTimeout(() => setActionSuccess(null), 3000);
+    } catch (err: any) {
+      setActionError(err?.shortMessage || err?.message || 'Dispute failed');
+    }
+  };
+
+  const handleRefund = async (paymentId: string) => {
+    setActionError(null);
+    try {
+      await refundPayment(paymentId as `0x${string}`);
+      setActionSuccess('Refund requested successfully!');
+      refetch();
+      setTimeout(() => setActionSuccess(null), 3000);
+    } catch (err: any) {
+      setActionError(err?.shortMessage || err?.message || 'Refund failed');
+    }
+  };
 
   const filteredPayments = payments.filter((payment) => {
     if (filter === 'pending') return payment.status === 0 || payment.status === 1;
@@ -220,13 +258,28 @@ export default function BuyerDashboard() {
                       </p>
                       <div className="flex gap-2">
                         {payment.status === 1 && (
-                          <Button variant="danger" size="sm" icon={AlertTriangle}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            icon={AlertTriangle}
+                            disabled={actionLoading}
+                            onClick={() => {
+                              setSelectedPaymentId(payment.paymentId);
+                              setShowDisputeModal(true);
+                            }}
+                          >
                             Dispute
                           </Button>
                         )}
                         {payment.status === 0 && (
-                          <Button variant="secondary" size="sm" icon={RefreshCw}>
-                            Request Refund
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={actionLoading ? Loader2 : RefreshCw}
+                            disabled={actionLoading}
+                            onClick={() => handleRefund(payment.paymentId)}
+                          >
+                            {actionLoading ? 'Processing...' : 'Request Refund'}
                           </Button>
                         )}
                       </div>
@@ -238,6 +291,68 @@ export default function BuyerDashboard() {
           </motion.div>
         )}
       </div>
+
+      {/* Success/Error notifications */}
+      {actionSuccess && (
+        <div className="fixed bottom-6 right-6 p-4 bg-green-100 dark:bg-green-900/80 rounded-xl shadow-lg flex items-center gap-3 z-50">
+          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <span className="text-green-700 dark:text-green-300">{actionSuccess}</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="fixed bottom-6 right-6 p-4 bg-red-100 dark:bg-red-900/80 rounded-xl shadow-lg z-50">
+          <span className="text-red-700 dark:text-red-300">{actionError}</span>
+          <button onClick={() => setActionError(null)} className="ml-3 text-red-500 font-bold">x</button>
+        </div>
+      )}
+
+      {/* Dispute Modal */}
+      <Modal
+        isOpen={showDisputeModal}
+        onClose={() => { setShowDisputeModal(false); setDisputeReason(''); }}
+        title="Dispute Payment"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-surface-600 dark:text-surface-400">
+            Describe why you are disputing this payment. Your reason will be hashed and stored on-chain.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-surface-900 dark:text-white mb-2">
+              Reason
+            </label>
+            <textarea
+              className="input min-h-[100px]"
+              placeholder="Describe the issue with the API response..."
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => { setShowDisputeModal(false); setDisputeReason(''); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              onClick={handleDispute}
+              disabled={actionLoading || !disputeReason.trim()}
+            >
+              {actionLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Disputing...
+                </>
+              ) : 'Submit Dispute'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

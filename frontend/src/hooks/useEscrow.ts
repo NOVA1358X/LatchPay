@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useWalletClient, usePublicClient } from 'wagmi';
-import { parseUnits, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
+import { parseUnits, keccak256, toBytes } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import addresses from '../config/addresses.137.json';
 import { ESCROW_ABI, ERC20_ABI } from '../lib/contracts';
@@ -56,7 +56,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
   const openPayment = useCallback(async (
     endpointId: `0x${string}`,
     amount: string, // USDC amount in human-readable format (e.g., "0.10")
-    nonce?: bigint
+    buyerNote?: string
   ) => {
     if (!walletClient || !publicClient) {
       throw new Error('Wallet not connected');
@@ -67,7 +67,11 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 
     try {
       const amountWei = parseUnits(amount, 6); // USDC has 6 decimals
-      const paymentNonce = nonce ?? BigInt(Date.now());
+      
+      // Create proper bytes32 buyerNoteHash
+      const buyerNoteHash = buyerNote 
+        ? keccak256(toBytes(buyerNote))
+        : keccak256(toBytes(`payment-${Date.now()}`));
       
       // Check allowance
       const currentAllowance = await checkAllowance(
@@ -80,29 +84,21 @@ export function useEscrow(options: UseEscrowOptions = {}) {
         await approveUSDC(amountWei * 2n); // Approve 2x for future payments
       }
 
-      // Open payment
+      // Open payment with correct args: (endpointId, maxPrice, buyerNoteHash)
       const hash = await walletClient.writeContract({
         address: escrowAddress,
         abi: ESCROW_ABI,
         functionName: 'openPayment',
-        args: [endpointId, amountWei, paymentNonce] as const,
-      } as any);
+        args: [endpointId, amountWei, buyerNoteHash],
+      });
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-      // Calculate payment ID (same as contract)
-      const paymentId = keccak256(
-        encodeAbiParameters(
-          parseAbiParameters('bytes32, address, uint256'),
-          [endpointId, walletClient.account.address, paymentNonce]
-        )
-      );
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['buyerPayments'] });
 
-      options.onSuccess?.(paymentId);
-      return { hash, paymentId, receipt };
+      options.onSuccess?.(hash);
+      return { hash, receipt };
     } catch (err: any) {
       const error = new Error(err.message || 'Failed to open payment');
       setError(error);
@@ -153,12 +149,15 @@ export function useEscrow(options: UseEscrowOptions = {}) {
     setError(null);
 
     try {
+      // Convert reason string to bytes32 evidence hash
+      const evidenceHash = keccak256(toBytes(reason));
+
       const hash = await walletClient.writeContract({
         address: escrowAddress,
         abi: ESCROW_ABI,
         functionName: 'dispute',
-        args: [paymentId, reason as any],
-      } as any);
+        args: [paymentId, evidenceHash],
+      });
 
       await publicClient.waitForTransactionReceipt({ hash });
       queryClient.invalidateQueries({ queryKey: ['buyerPayments'] });
@@ -173,10 +172,41 @@ export function useEscrow(options: UseEscrowOptions = {}) {
     }
   }, [walletClient, publicClient, escrowAddress, queryClient]);
 
+  // Refund payment (when delivery deadline passed)
+  const refundPayment = useCallback(async (paymentId: `0x${string}`) => {
+    if (!walletClient || !publicClient) {
+      throw new Error('Wallet not connected');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const hash = await walletClient.writeContract({
+        address: escrowAddress,
+        abi: ESCROW_ABI,
+        functionName: 'refund',
+        args: [paymentId],
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash });
+      queryClient.invalidateQueries({ queryKey: ['buyerPayments'] });
+      
+      return hash;
+    } catch (err: any) {
+      const error = new Error(err.message || 'Failed to refund payment');
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [walletClient, publicClient, escrowAddress, queryClient]);
+
   return {
     openPayment,
     releasePayment,
     disputePayment,
+    refundPayment,
     approveUSDC,
     checkAllowance,
     isLoading,

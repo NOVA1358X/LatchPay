@@ -47,16 +47,37 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  // Get onchain endpoints (will be empty until contracts are deployed)
+  // Get onchain endpoints
   const { endpoints: onchainEndpoints, isLoading } = useEndpoints();
 
-  // Merge static data with onchain data
+  // Merge: prioritize on-chain data, show static entries only if no on-chain match
   const endpoints = useMemo(() => {
-    // For now, use static data; in production, merge with onchain registry
+    // Map on-chain endpoints into display format
+    const onchainMapped = onchainEndpoints.map((ep) => {
+      const staticMatch = featuredEndpointsData.find((s) => s.id === ep.endpointId);
+      return {
+        id: ep.endpointId,
+        name: staticMatch?.name || ep.metadataURI || `Endpoint ${ep.endpointId.slice(0, 10)}...`,
+        description: staticMatch?.description || 'On-chain API endpoint',
+        category: staticMatch?.category || ep.category || 'compute',
+        pricePerCall: (Number(ep.pricePerCall) / 1e6).toFixed(6),
+        seller: ep.seller,
+        tags: staticMatch?.tags || [],
+        featured: staticMatch?.featured || false,
+        apiEndpoint: staticMatch?.apiEndpoint || '',
+        isOnchain: true,
+      };
+    });
+
+    // If we have on-chain data, use it; otherwise show static as preview
+    if (onchainMapped.length > 0) {
+      return onchainMapped;
+    }
+
+    // Fallback to static data when contracts haven't been deployed yet
     return featuredEndpointsData.map((endpoint) => ({
       ...endpoint,
-      // Find matching onchain data if available
-      onchain: onchainEndpoints.find((e) => e.id === endpoint.id),
+      isOnchain: false,
     }));
   }, [onchainEndpoints]);
 

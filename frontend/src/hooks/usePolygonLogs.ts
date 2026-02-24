@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { parseAbiItem } from 'viem';
 import { publicClient } from '../lib/viem';
@@ -33,9 +33,6 @@ const eventSignatures: Record<string, string> = {
 };
 
 export function usePolygonLogs(options: UsePolygonLogsOptions = {}) {
-  useState<LogEvent[]>([]);
-  useState<bigint | null>(null);
-
   const { data: blockNumber } = useQuery({
     queryKey: ['blockNumber'],
     queryFn: async () => {

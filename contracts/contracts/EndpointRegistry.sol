@@ -43,6 +43,9 @@ contract EndpointRegistry is Ownable, ReentrancyGuard {
     /// @notice Reference to the SellerBondVault contract
     address public bondVault;
 
+    /// @notice Reference to the EscrowVault contract (authorized to call incrementCalls)
+    address public escrowVault;
+
     // ============ Events ============
 
     event EndpointRegistered(
@@ -63,6 +66,7 @@ contract EndpointRegistry is Ownable, ReentrancyGuard {
     event EndpointDeactivated(bytes32 indexed endpointId);
     event EndpointReactivated(bytes32 indexed endpointId);
     event BondVaultUpdated(address indexed newBondVault);
+    event EscrowVaultUpdated(address indexed newEscrowVault);
     event EndpointCallIncremented(bytes32 indexed endpointId, uint256 newTotal);
 
     // ============ Errors ============
@@ -76,6 +80,7 @@ contract EndpointRegistry is Ownable, ReentrancyGuard {
     error InsufficientBond();
     error ZeroAddress();
     error EmptyMetadataURI();
+    error NotAuthorized();
 
     // ============ Constructor ============
 
@@ -203,10 +208,11 @@ contract EndpointRegistry is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Increment total calls for an endpoint (called by EscrowVault)
+     * @notice Increment total calls for an endpoint (only EscrowVault)
      * @param endpointId The endpoint to increment
      */
     function incrementCalls(bytes32 endpointId) external {
+        if (msg.sender != escrowVault) revert NotAuthorized();
         Endpoint storage endpoint = endpoints[endpointId];
         if (endpoint.seller == address(0)) revert EndpointNotFound();
         
@@ -223,6 +229,16 @@ contract EndpointRegistry is Ownable, ReentrancyGuard {
         if (_bondVault == address(0)) revert ZeroAddress();
         bondVault = _bondVault;
         emit BondVaultUpdated(_bondVault);
+    }
+
+    /**
+     * @notice Set the escrow vault address (authorized to call incrementCalls)
+     * @param _escrowVault Address of the EscrowVault contract
+     */
+    function setEscrowVault(address _escrowVault) external onlyOwner {
+        if (_escrowVault == address(0)) revert ZeroAddress();
+        escrowVault = _escrowVault;
+        emit EscrowVaultUpdated(_escrowVault);
     }
 
     // ============ View Functions ============

@@ -17,6 +17,8 @@ export const addresses = {
   EscrowVault: (import.meta.env.VITE_ESCROW_VAULT_ADDRESS || addressesJson.EscrowVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
   SellerBondVault: (import.meta.env.VITE_SELLER_BOND_VAULT_ADDRESS || addressesJson.SellerBondVault || '0x0000000000000000000000000000000000000000') as `0x${string}`,
   ReceiptStore: (import.meta.env.VITE_RECEIPT_STORE_ADDRESS || addressesJson.ReceiptStore || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  ReputationEngine: (import.meta.env.VITE_REPUTATION_ENGINE_ADDRESS || (addressesJson as any).ReputationEngine || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+  PaymentRouter: (import.meta.env.VITE_PAYMENT_ROUTER_ADDRESS || (addressesJson as any).PaymentRouter || '0x0000000000000000000000000000000000000000') as `0x${string}`,
   deploymentBlock: parseInt(import.meta.env.VITE_BLOCK_SCAN_FROM || '0') || addressesJson.deploymentBlock || 0,
 };
 

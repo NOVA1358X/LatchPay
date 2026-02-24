@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/common';
 import { useTheme } from '../providers/ThemeProvider';
+import { addresses } from '../config/constants';
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
@@ -256,10 +257,12 @@ export default function Settings() {
 
             <div className="space-y-3">
               {[
-                { name: 'EndpointRegistry', address: '0x0000000000000000000000000000000000000000' },
-                { name: 'EscrowVault', address: '0x0000000000000000000000000000000000000000' },
-                { name: 'SellerBondVault', address: '0x0000000000000000000000000000000000000000' },
-                { name: 'ReceiptStore', address: '0x0000000000000000000000000000000000000000' },
+                { name: 'EndpointRegistry', address: addresses.EndpointRegistry },
+                { name: 'EscrowVault', address: addresses.EscrowVault },
+                { name: 'SellerBondVault', address: addresses.SellerBondVault },
+                { name: 'ReceiptStore', address: addresses.ReceiptStore },
+                { name: 'ReputationEngine', address: addresses.ReputationEngine },
+                { name: 'PaymentRouter', address: addresses.PaymentRouter },
               ].map((contract) => (
                 <div
                   key={contract.name}
@@ -286,7 +289,7 @@ export default function Settings() {
             </div>
 
             <p className="mt-4 text-sm text-surface-500">
-              Contract addresses will update after mainnet deployment
+              All contracts deployed on Polygon PoS (Chain ID 137)
             </p>
           </motion.section>
 
