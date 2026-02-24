@@ -2,8 +2,9 @@ import { ReactNode } from 'react';
 import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
 import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { DynamicWagmiConnector } from '@dynamic-labs/wagmi-connector';
-import { WagmiProvider, createConfig, http } from 'wagmi';
+import { WagmiProvider, createConfig, http, fallback } from 'wagmi';
 import { polygon } from 'wagmi/chains';
+import { POLYGON_RPCS } from '../lib/viem';
 
 const DYNAMIC_ENV_ID = import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID || import.meta.env.VITE_DYNAMIC_ENV_ID || '85e1739c-adfe-4bf2-99ee-60e6bca200ab';
 
@@ -12,7 +13,7 @@ const wagmiConfig = createConfig({
   chains: [polygon],
   multiInjectedProviderDiscovery: false,
   transports: {
-    [polygon.id]: http('https://polygon-rpc.com'),
+    [polygon.id]: fallback(POLYGON_RPCS.map((url) => http(url))),
   },
 });
 
@@ -39,7 +40,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
                 symbol: 'MATIC',
                 decimals: 18,
               },
-              rpcUrls: ['https://polygon-rpc.com'],
+              rpcUrls: ['https://polygon.llamarpc.com', 'https://polygon-bor-rpc.publicnode.com', 'https://polygon-rpc.com'],
               blockExplorerUrls: ['https://polygonscan.com'],
             },
           ],
