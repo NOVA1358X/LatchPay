@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useWalletClient, usePublicClient } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { publicClient } from '../lib/viem';
 import { addresses, USDC_ADDRESS } from '../config/constants';
@@ -129,7 +129,6 @@ export function useSellerBond(sellerAddress: string | undefined) {
 
 export function useBondActions() {
   const { data: walletClient } = useWalletClient();
-  const wagmiPublicClient = usePublicClient();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -138,7 +137,7 @@ export function useBondActions() {
 
   // Deposit bond
   const depositBond = useCallback(async (amount: string) => {
-    if (!walletClient || !wagmiPublicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -153,7 +152,7 @@ export function useBondActions() {
       const amountWei = parseUnits(amount, 6);
 
       // Check and approve USDC
-      const allowance = await wagmiPublicClient.readContract({
+      const allowance = await publicClient.readContract({
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'allowance',
@@ -167,7 +166,7 @@ export function useBondActions() {
           functionName: 'approve',
           args: [bondVaultAddress, amountWei * 2n],
         });
-        await wagmiPublicClient.waitForTransactionReceipt({ hash: approveHash });
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
       // Deposit
@@ -178,7 +177,7 @@ export function useBondActions() {
         args: [amountWei],
       });
 
-      await wagmiPublicClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash });
       queryClient.invalidateQueries({ queryKey: ['sellerBond'] });
 
       return hash;
@@ -189,11 +188,11 @@ export function useBondActions() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletClient, wagmiPublicClient, bondVaultAddress, queryClient]);
+  }, [walletClient, bondVaultAddress, queryClient]);
 
   // Withdraw bond
   const withdrawBond = useCallback(async (amount: string) => {
-    if (!walletClient || !wagmiPublicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -214,7 +213,7 @@ export function useBondActions() {
         args: [amountWei],
       });
 
-      await wagmiPublicClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash });
       queryClient.invalidateQueries({ queryKey: ['sellerBond'] });
 
       return hash;
@@ -225,7 +224,7 @@ export function useBondActions() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletClient, wagmiPublicClient, bondVaultAddress, queryClient]);
+  }, [walletClient, bondVaultAddress, queryClient]);
 
   return {
     depositBond,

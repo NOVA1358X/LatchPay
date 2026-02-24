@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useWalletClient, usePublicClient } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 import { parseUnits, keccak256, toBytes } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import addresses from '../config/addresses.137.json';
 import { ENDPOINT_REGISTRY_ABI, BOND_VAULT_ABI, ERC20_ABI } from '../lib/contracts';
 import { USDC_ADDRESS } from '../config/constants';
+import { publicClient } from '../lib/viem';
 
 interface EndpointData {
   metadataURI: string;
@@ -16,7 +17,6 @@ interface EndpointData {
 
 export function useSellerActions() {
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -26,7 +26,7 @@ export function useSellerActions() {
 
   // Register a new endpoint
   const registerEndpoint = useCallback(async (data: EndpointData) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -75,7 +75,7 @@ export function useSellerActions() {
     endpointId: `0x${string}`,
     data: Partial<EndpointData>
   ) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -110,7 +110,7 @@ export function useSellerActions() {
 
   // Deactivate endpoint
   const deactivateEndpoint = useCallback(async (endpointId: `0x${string}`) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -135,7 +135,7 @@ export function useSellerActions() {
 
   // Reactivate endpoint
   const reactivateEndpoint = useCallback(async (endpointId: `0x${string}`) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -160,7 +160,7 @@ export function useSellerActions() {
 
   // Deposit bond
   const depositBond = useCallback(async (amount: string) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -205,7 +205,7 @@ export function useSellerActions() {
 
   // Request bond withdrawal
   const requestWithdrawal = useCallback(async (amount: string) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -232,7 +232,7 @@ export function useSellerActions() {
 
   // Execute withdrawal (after lock period)
   const executeWithdrawal = useCallback(async (amount: string) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 

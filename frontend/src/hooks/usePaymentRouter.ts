@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWalletClient, usePublicClient } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { addresses } from '../config/constants';
 import { PaymentRouterABI } from '../lib/contracts';
@@ -20,7 +20,6 @@ interface RevenueSplit {
 
 export function usePaymentRouter() {
   const { data: walletClient } = useWalletClient();
-  const client = usePublicClient();
   const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -53,9 +52,7 @@ export function usePaymentRouter() {
           functionName: 'batchOpenPayments',
           args: [endpointIds, sellers, amounts, noteHashes],
         } as any);
-
-        if (client) {
-          await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
         }
 
         queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -70,7 +67,7 @@ export function usePaymentRouter() {
         setIsLoading(false);
       }
     },
-    [walletClient, client, routerAddress, queryClient]
+    [walletClient, publicClient, routerAddress, queryClient]
   );
 
   /**
@@ -93,9 +90,7 @@ export function usePaymentRouter() {
           functionName: 'setRevenueSplit',
           args: [seller, recipients, sharesBps.map((s) => BigInt(s))],
         } as any);
-
-        if (client) {
-          await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
         }
 
         return hash;
@@ -107,7 +102,7 @@ export function usePaymentRouter() {
         setIsLoading(false);
       }
     },
-    [walletClient, client, routerAddress]
+    [walletClient, publicClient, routerAddress]
   );
 
   /**
@@ -130,9 +125,7 @@ export function usePaymentRouter() {
           functionName: 'removeRevenueSplit',
           args: [seller],
         } as any);
-
-        if (client) {
-          await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
         }
 
         return hash;
@@ -144,7 +137,7 @@ export function usePaymentRouter() {
         setIsLoading(false);
       }
     },
-    [walletClient, client, routerAddress]
+    [walletClient, publicClient, routerAddress]
   );
 
   /**
@@ -167,9 +160,7 @@ export function usePaymentRouter() {
           functionName: 'executeSplit',
           args: [seller],
         } as any);
-
-        if (client) {
-          await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
         }
 
         return hash;
@@ -181,7 +172,7 @@ export function usePaymentRouter() {
         setIsLoading(false);
       }
     },
-    [walletClient, client, routerAddress]
+    [walletClient, publicClient, routerAddress]
   );
 
   /**
@@ -203,9 +194,7 @@ export function usePaymentRouter() {
         functionName: 'withdrawSplitBalance',
         args: [],
       } as any);
-
-      if (client) {
-        await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
       }
 
       return hash;
@@ -216,7 +205,7 @@ export function usePaymentRouter() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletClient, client, routerAddress]);
+  }, [walletClient, publicClient, routerAddress]);
 
   /**
    * Convenience: route payment and open it
@@ -243,9 +232,7 @@ export function usePaymentRouter() {
           functionName: 'routeAndPay',
           args: [endpointId, seller, amount, buyerNoteHash],
         } as any);
-
-        if (client) {
-          await client.waitForTransactionReceipt({ hash });
+        if (true) { await publicClient.waitForTransactionReceipt({ hash });
         }
 
         queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -260,7 +247,7 @@ export function usePaymentRouter() {
         setIsLoading(false);
       }
     },
-    [walletClient, client, routerAddress, queryClient]
+    [walletClient, publicClient, routerAddress, queryClient]
   );
 
   /**

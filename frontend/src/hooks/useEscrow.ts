@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useWalletClient, usePublicClient } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 import { parseUnits, keccak256, toBytes } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import addresses from '../config/addresses.137.json';
 import { ESCROW_ABI, ERC20_ABI } from '../lib/contracts';
 import { USDC_ADDRESS } from '../config/constants';
+import { publicClient } from '../lib/viem';
 
 interface UseEscrowOptions {
   onSuccess?: (paymentId: string) => void;
@@ -13,7 +14,6 @@ interface UseEscrowOptions {
 
 export function useEscrow(options: UseEscrowOptions = {}) {
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -22,7 +22,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 
   // Check USDC allowance
   const checkAllowance = useCallback(async (owner: `0x${string}`, _amount: bigint) => {
-    if (!publicClient) return 0n;
+    if (!walletClient) return 0n;
     
     const allowance = await publicClient.readContract({
       address: USDC_ADDRESS,
@@ -45,7 +45,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
       args: [escrowAddress, amount],
     });
 
-    if (publicClient) {
+    if (true) {
       await publicClient.waitForTransactionReceipt({ hash });
     }
 
@@ -58,7 +58,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
     amount: string, // USDC amount in human-readable format (e.g., "0.10")
     buyerNote?: string
   ) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -111,7 +111,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 
   // Release payment (after dispute window)
   const releasePayment = useCallback(async (paymentId: `0x${string}`) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -141,7 +141,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 
   // Dispute payment
   const disputePayment = useCallback(async (paymentId: `0x${string}`, reason: string) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -174,7 +174,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 
   // Refund payment (when delivery deadline passed)
   const refundPayment = useCallback(async (paymentId: `0x${string}`) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -217,8 +217,7 @@ export function useEscrow(options: UseEscrowOptions = {}) {
 // Hook for sellers to mark delivery
 export function useSellerDelivery() {
   const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient();
-  const queryClient = useQueryClient();
+    const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const escrowAddress = addresses.EscrowVault as `0x${string}`;
@@ -229,7 +228,7 @@ export function useSellerDelivery() {
     responseHash: `0x${string}`,
     signature: `0x${string}`
   ) => {
-    if (!walletClient || !publicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 

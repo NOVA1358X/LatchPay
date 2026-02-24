@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { useWalletClient, usePublicClient } from 'wagmi';
+import { useWalletClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import { publicClient } from '../lib/viem';
 import { EndpointRegistryABI, getContractAddress } from '../lib/contracts';
@@ -198,7 +198,6 @@ export function useSellerEndpoints(sellerAddress: string | undefined) {
 // Hook for registering a new endpoint
 export function useRegisterEndpoint() {
   const { data: walletClient } = useWalletClient();
-  const wagmiPublicClient = usePublicClient();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -209,7 +208,7 @@ export function useRegisterEndpoint() {
     category: string; // category key like "ai", "data", etc.
     disputeWindowHours: number;
   }) => {
-    if (!walletClient || !wagmiPublicClient) {
+    if (!walletClient) {
       throw new Error('Wallet not connected');
     }
 
@@ -246,7 +245,7 @@ export function useRegisterEndpoint() {
 
       // Simulate the transaction first
       // Contract signature: registerEndpoint(string metadataURI, uint256 pricePerCall, bytes32 category, uint256 disputeWindowSeconds, uint256 requiredBond)
-      const { request } = await wagmiPublicClient.simulateContract({
+      const { request } = await publicClient.simulateContract({
         address: registryAddress,
         abi: EndpointRegistryABI,
         functionName: 'registerEndpoint',
@@ -258,7 +257,7 @@ export function useRegisterEndpoint() {
       const hash = await walletClient.writeContract(request);
 
       // Wait for confirmation
-      const receipt = await wagmiPublicClient.waitForTransactionReceipt({ hash });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
       if (receipt.status === 'reverted') {
         throw new Error('Transaction reverted');
@@ -276,7 +275,7 @@ export function useRegisterEndpoint() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletClient, wagmiPublicClient, queryClient]);
+  }, [walletClient, queryClient]);
 
   return {
     registerEndpoint,
